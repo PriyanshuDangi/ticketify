@@ -36,7 +36,7 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 - Upload event banner/cover image
 - Set single ticket price in PYUSD
 - Define maximum attendee capacity
-- Set sales cutoff time (e.g., 1 hour before event)
+- sales cutoff time (before event starts)
 - Connect Google account for automatic Calendar event creation
 - Receive unique Google Meet link automatically
 
@@ -83,15 +83,13 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 - Revenue tracking in PYUSD with USD equivalent
 - Complete attendee list (synced with Google Calendar)
 - Withdraw funds to wallet instantly
-- Cancel event with automatic refunds
 - Send announcement emails to all ticket holders
-- Automated event reminders (24hr and 1hr before)
 
 **Ticket Holder View:**
 - View all purchased tickets
 - Quick access to Google Meet links
 - Add to Calendar button
-- Event reminders and updates
+- Event updates from organizers
 
 ---
 
@@ -104,9 +102,9 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 - **Web3**: Privy for wallet connections and authentication
 - **Backend**: Node.js with Express.js
 - **Database**: MongoDB
-- **Blockchain**: Solidity smart contracts on Ethereum (Sepolia testnet, then Mainnet)
+- **Blockchain**: Solidity smart contracts on Ethereum Sepolia testnet (mainnet deployment as future enhancement)
 - **Contract Deployment**: Hardhat 3
-- **Storage**: IPFS (Pinata) for event images
+- **Storage**: MongoDB for event images and metadata
 - **Email**: SendGrid or Resend for notifications
 
 ### Key Integrations
@@ -166,7 +164,6 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 3. **Receive Access**
    - Automatically added to Google Calendar
    - Receive confirmation email
-   - Get event reminders
 
 4. **Attend Event**
    - On event day, click Google Meet link from calendar
@@ -328,12 +325,11 @@ Built with Tailwind CSS and Shadcn/ui for a modern, accessible, and consistent u
 - ETHGlobal project submission
 
 ### Phase 2: Post-Hackathon (Weeks 3-4)
-- Smart contract security audit
-- Mainnet deployment
-- The Graph subgraph for event indexing
 - Enhanced error handling
 - Mobile responsiveness improvements
 - Beta user testing with 10-20 organizers
+- Performance optimization
+- Additional testing and bug fixes
 
 ### Phase 3: Growth (Months 2-3)
 - Marketing campaign targeting crypto communities
@@ -431,7 +427,6 @@ Built with Tailwind CSS and Shadcn/ui for a modern, accessible, and consistent u
 - Access control: Only organizers can withdraw their funds
 - Reentrancy protection on all fund transfers
 - Emergency pause mechanism for critical bugs
-- Automatic refund logic if event is cancelled
 - Validation to prevent ticket purchases for past events
 - Comprehensive test coverage before deployment
 
@@ -493,7 +488,14 @@ Built with Tailwind CSS and Shadcn/ui for a modern, accessible, and consistent u
 
 ## 13. Future Enhancements
 
+### Infrastructure Improvements
+- **IPFS Storage**: Migrate event images to IPFS (Pinata) for decentralized storage
+- **Mainnet Deployment**: Deploy smart contracts to Ethereum mainnet
+- **The Graph Integration**: Add subgraph for event indexing and querying
+- **Smart Contract Audit**: Professional security audit before mainnet deployment
+
 ### V2 Features (3-6 months)
+- **Event Reminders**: Automated email reminders (24hr and 1hr before events)
 - **Multiple Meeting Platforms**: Zoom, Microsoft Teams integration
 - **Recording Distribution**: Automatically share recordings with ticket holders
 - **Recurring Events**: Subscription-based access for weekly/monthly events
@@ -622,7 +624,7 @@ The platform is perfectly positioned for ETHGlobal's PayPal USD prize categories
 
 **PYUSD Contract Address:**
 - Ethereum Mainnet: `0x6c3ea9036406852006290770BEdFcAbA0e23A0e8`
-- Ethereum Sepolia: Use testnet version or faucet
+- Ethereum Sepolia: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
 
 **Why PYUSD for Ticketing:**
 - Stable value (1 PYUSD = 1 USD)
