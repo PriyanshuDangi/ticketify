@@ -4,7 +4,8 @@ alwaysApply: true
 
 # JavaScript Usage
 
-This project uses **JavaScript only** - do not use TypeScript.
+This project uses **JavaScript only in every folder except contracts** - do not use TypeScript.
+exception: contracts folder 
 
 ## Guidelines
 
