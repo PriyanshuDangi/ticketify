@@ -1,0 +1,17 @@
+---
+globs: contracts/**
+description: Rules for smart contract development
+---
+
+# Smart Contracts (contracts/)
+
+## Guidelines
+
+- Use Solidity for Ethereum smart contracts
+- Follow best practices for security (checks-effects-interactions pattern)
+- Include comprehensive comments explaining contract logic
+- Implement proper access control
+- Add events for important state changes
+- Optimize for gas efficiency
+- Include test files for all contracts
+- Document contract interfaces and deployment procedures
