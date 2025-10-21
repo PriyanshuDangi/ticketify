@@ -18,6 +18,32 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 - Basic organizer dashboard
 - Email notifications
 
+**Technology Specifications:**
+- **Node.js**: 20.12.2
+- **Database**: MongoDB with Mongoose ODM
+- **Image Upload**: Multer (8MB limit, base64 storage)
+- **Email Service**: SendGrid
+- **Testing**: Jest for unit tests, Hardhat for smart contracts
+- **Timezone**: Store UTC in database, display in user timezone using Moment.js
+- **PYUSD**: 6 decimals (display max 2 decimals in UI)
+- **Authentication**: Bearer token with wallet signature verification
+- **Network**: Ethereum Sepolia (auto-switch if user on wrong network)
+
+**Key Business Rules & Constraints:**
+- ✅ **One Ticket Per Event**: One wallet can only purchase one ticket per event
+- ✅ **One Wallet Per Account**: Strict 1:1 wallet-to-account mapping (no transfers in MVP)
+- ✅ **Withdrawal Anytime**: Organizers can withdraw revenue at any time (no restrictions)
+- ✅ **Event Editing Rules**:
+  - Before tickets sold: Can edit all fields
+  - After tickets sold: Can only edit title, description, and image
+  - Cannot edit: price, dateTime, maxAttendees after tickets sold
+- ✅ **Event Deletion**: Not allowed once any tickets have been sold
+- ✅ **No Refunds in MVP**: Placeholder added in contract for future implementation
+- ✅ **Immutable Contract**: No upgrade mechanism (no proxy pattern for MVP)
+- ✅ **JWT Expiration**: 7-day expiry, no refresh token (user must reconnect)
+- ✅ **Gas Estimation**: Show estimated gas fees before all transactions
+- ✅ **Demo Strategy**: Manual event creation, no seed data (keep it real)
+
 ---
 
 ## Phase 1: Project Setup & Infrastructure (Day 1)
@@ -56,20 +82,22 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 1.3 Setup Backend Server
 
-**Task**: Initialize Express.js backend with MongoDB connection.
+**Task**: Initialize Express.js backend with MongoDB connection using Mongoose.
 
 **Steps**:
 1. Navigate to `server/` directory
-2. Initialize npm project
-3. Install Express.js, MongoDB driver, dotenv, cors, and nodemon
-4. Create basic folder structure: `routes/`, `controllers/`, `models/`, `middleware/`, `utils/`
+2. Initialize npm project with Node.js 20.12.2
+3. Install dependencies: Express.js, Mongoose, dotenv, cors, nodemon, multer, bcrypt, jsonwebtoken
+4. Create basic folder structure: `routes/`, `controllers/`, `models/`, `middleware/`, `utils/`, `uploads/`
 5. Create `server.js` as entry point
-6. Create `.env.example` with placeholders for MongoDB URI, port, and API keys
+6. Create `.env.example` with placeholders for MongoDB URI, port, JWT secret, and API keys
+7. Configure Multer for image uploads with 8MB size limit
 
 **Test**:
 - Run `npm start` - server should start without errors
 - Visit `http://localhost:PORT/health` - should return 200 OK (create basic health endpoint first)
 - All required folders exist
+- Node version check: `node -v` should show 20.12.2
 
 ### 1.4 Setup Frontend Application
 
@@ -82,18 +110,21 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 4. Install Shadcn/ui CLI and initialize
 5. Install Zustand for state management
 6. Install Privy SDK for wallet authentication
-7. Install ethers.js for blockchain interactions
-8. Create `.env.local.example` with placeholder environment variables
+7. Install ethers.js v6 for blockchain interactions
+8. Install moment.js for timezone handling
+9. Install axios for API calls
+10. Create `.env.local.example` with placeholder environment variables
 
 **Test**:
 - Run `npm run dev` - Next.js dev server starts
 - Visit `http://localhost:3000` - default page loads
 - Tailwind CSS classes work (add test border to verify)
 - All dependencies listed in `package.json`
+- Moment.js imports correctly
 
 ### 1.5 Setup MongoDB Database
 
-**Task**: Create MongoDB Atlas cluster and configure connection.
+**Task**: Create MongoDB Atlas cluster and configure Mongoose connection.
 
 **Steps**:
 1. Create MongoDB Atlas account (or use existing)
@@ -102,12 +133,14 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 4. Create database user with password
 5. Get connection string
 6. Add connection string to backend `.env` file
-7. Create basic connection utility in `server/utils/db.js`
+7. Create Mongoose connection utility in `server/utils/db.js`
+8. Configure Mongoose options (strict mode, timestamps)
 
 **Test**:
 - Run connection test script - should connect successfully
 - Check MongoDB Atlas dashboard - shows successful connection
 - No connection errors in backend logs
+- Mongoose connected event fires
 
 ---
 
@@ -129,20 +162,24 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 2.2 Implement Ticketify Main Contract
 
-**Task**: Create core smart contract for event and ticket management.
+**Task**: Create core immutable smart contract for event and ticket management.
 
 **Steps**:
 1. Create `contracts/Ticketify.sol`
-2. Define contract state variables (events mapping, ticket purchases, platform fee)
-3. Define Event struct (id, organizer, price, maxAttendees, eventTime, isActive)
-4. Define Ticket struct (eventId, buyer, timestamp)
-5. Set platform fee to 250 basis points (2.5%)
-6. Store PYUSD token address as immutable variable
+2. Import OpenZeppelin's Ownable and ReentrancyGuard
+3. Define contract state variables (events mapping, ticket purchases, platform fee)
+4. Define Event struct (id, organizer, price, maxAttendees, eventTime, isActive, ticketsSold, hasWithdrawn)
+5. Define Ticket struct (eventId, buyer, timestamp)
+6. Add mapping to track if wallet has purchased ticket for event (buyer => eventId => bool)
+7. Set platform fee to 250 basis points (2.5%)
+8. Store PYUSD token address as immutable variable
+9. **Contract is immutable** (no upgrade mechanism for MVP)
 
 **Test**:
 - Contract compiles: `npx hardhat compile`
 - Check compiled artifacts exist in `artifacts/` directory
 - No compilation warnings or errors
+- Verify ReentrancyGuard imported for withdrawal protection
 
 ### 2.3 Implement createEvent Function
 
@@ -166,18 +203,19 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 2.4 Implement purchaseTicket Function
 
-**Task**: Allow users to buy tickets with PYUSD.
+**Task**: Allow users to buy tickets with PYUSD (one ticket per wallet per event).
 
 **Steps**:
 1. Create `purchaseTicket()` function with parameter: eventId
 2. Validate event exists and is active
 3. Validate event has available capacity
 4. Validate event hasn't started yet
-5. Calculate platform fee (2.5% of ticket price)
-6. Transfer PYUSD from buyer to contract using transferFrom
-7. Store ticket purchase data (buyer address, event ID, timestamp)
-8. Increment ticket count for event
-9. Emit `TicketPurchased` event with buyer, eventId, price
+5. **Validate buyer hasn't already purchased ticket for this event** (one per wallet)
+6. Calculate platform fee (2.5% of ticket price)
+7. Transfer PYUSD from buyer to contract using transferFrom
+8. Store ticket purchase data (buyer address, event ID, timestamp)
+9. Increment ticket count for event
+10. Emit `TicketPurchased` event with buyer, eventId, price
 
 **Test**:
 - User approves PYUSD spending first
@@ -187,25 +225,33 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 - Verify TicketPurchased event emitted
 - Try purchasing when sold out - should revert
 - Try purchasing after event started - should revert
+- **Try purchasing second ticket for same event with same wallet - should revert**
 
 ### 2.5 Implement Withdrawal Functions
 
-**Task**: Allow organizers to withdraw ticket revenue.
+**Task**: Allow organizers to withdraw ticket revenue anytime and add refund placeholder.
 
 **Steps**:
 1. Create `withdrawRevenue()` function with parameter: eventId
 2. Validate caller is event organizer
-3. Calculate organizer's share (total tickets sold × price - platform fee)
-4. Transfer PYUSD from contract to organizer
-5. Mark event as withdrawn
-6. Prevent double withdrawal
-7. Emit `RevenueWithdrawn` event
-8. Create `withdrawPlatformFees()` function for contract owner
-9. Add Ownable pattern for platform fee withdrawal
+3. **Allow withdrawal anytime** (no time restriction)
+4. Calculate organizer's share (total tickets sold × price - platform fee per ticket)
+5. Transfer PYUSD from contract to organizer
+6. Mark event as withdrawn
+7. Prevent double withdrawal
+8. Emit `RevenueWithdrawn` event
+9. Create `withdrawPlatformFees()` function for contract owner
+10. Add Ownable pattern for platform fee withdrawal
+11. **Add refund function placeholder** (commented out for future implementation)
+    ```solidity
+    // Future enhancement: refund functionality
+    // function refundTicket(uint256 eventId) external { ... }
+    ```
 
 **Test**:
-- Organizer withdraws after event - succeeds
-- Verify correct PYUSD amount transferred
+- Organizer withdraws immediately after first ticket sale - succeeds
+- Organizer withdraws anytime - succeeds
+- Verify correct PYUSD amount transferred (price - 2.5% fee) × tickets sold
 - Try withdrawing twice - second attempt reverts
 - Non-organizer tries to withdraw - reverts
 - Platform owner withdraws accumulated fees - succeeds
@@ -228,23 +274,26 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 2.7 Write Comprehensive Tests
 
-**Task**: Create full test suite for smart contract.
+**Task**: Create full test suite for smart contract using Hardhat.
 
 **Steps**:
-1. Set up test fixtures with mock PYUSD token
+1. Set up test fixtures with mock PYUSD token (or use actual Sepolia PYUSD in tests)
 2. Test event creation (valid and invalid cases)
 3. Test ticket purchasing (valid and invalid cases)
 4. Test withdrawal functions
 5. Test access control (organizer-only functions)
 6. Test edge cases (sold out, past events, zero values)
 7. Test event emission for all functions
-8. Test reentrancy protection
+8. Test reentrancy protection using ReentrancyGuard pattern
+9. Use Hardhat's time manipulation for testing event timing
+10. Test PYUSD decimal handling (6 decimals)
 
 **Test**:
 - Run `npx hardhat test` - all tests pass
 - Achieve >90% code coverage
 - No failing tests
 - All edge cases covered
+- Gas usage is reasonable for all functions
 
 ### 2.8 Deploy to Sepolia Testnet
 
@@ -271,14 +320,51 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 3.1 Create Database Models
 
-**Task**: Define MongoDB schemas for all data entities.
+**Task**: Define Mongoose schemas for all data entities.
 
 **Steps**:
-1. Create `models/User.js` with fields: walletAddress, email, googleTokens (encrypted), createdAt
-2. Create `models/Event.js` with fields: contractEventId, organizerWalletAddress, title, description, imageUrl, dateTime, timezone, price, maxAttendees, googleCalendarId, googleMeetLink, isActive, createdAt
-3. Create `models/Ticket.js` with fields: eventId, buyerWalletAddress, buyerEmail, transactionHash, purchasedAt, googleCalendarEventStatus
-4. Add indexes for efficient queries (walletAddress, contractEventId, eventId)
-5. Add validation rules for required fields
+1. Create `models/User.js` with schema:
+   ```javascript
+   {
+     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
+     walletAddress: { type: String, required: true, unique: true, index: true },
+     name: { type: String, required: true, trim: true },
+     isGoogleCalendarAdded: { type: Boolean, default: false },
+     googleCalendar: {
+       access_token: String,
+       scope: { type: String, default: 'https://www.googleapis.com/auth/calendar' },
+       token_type: { type: String, default: 'Bearer' },
+       refresh_token: String,
+       expiry_date: Date
+     }
+   }
+   // with timestamps: true
+   ```
+
+2. Create `models/Event.js` with fields:
+   - contractEventId: String (unique, indexed)
+   - owner: ObjectId (ref: 'User', required)
+   - title, description: String
+   - imageUrl: String (base64 encoded)
+   - dateTime: Date (stored as UTC)
+   - duration: Number (in minutes)
+   - price: Number
+   - maxAttendees: Number
+   - googleCalendarId: String
+   - googleMeetLink: String
+   - isActive: Boolean
+   - Add timestamps
+
+3. Create `models/Ticket.js` with fields:
+   - event: ObjectId (ref: 'Event', required)
+   - buyerWalletAddress: String (required, indexed)
+   - buyerEmail: String (required)
+   - transactionHash: String (unique)
+   - status: String enum ['created', 'blockchain_added', 'calendar_added']
+   - Add timestamps
+
+4. Add compound indexes: (event + buyerWalletAddress) on Ticket model
+5. Add validation rules for all required fields
 
 **Test**:
 - Import models in test file
@@ -286,44 +372,58 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 - Try creating document with missing required field - fails validation
 - Query documents using indexed fields - fast response
 - Check MongoDB Atlas - collections created with correct schemas
+- Verify walletAddress is indexed and unique on User model
 
 ### 3.2 Setup Authentication Middleware
 
-**Task**: Implement wallet-based authentication.
+**Task**: Implement wallet-based authentication with Bearer token (no refresh token).
 
 **Steps**:
 1. Create `middleware/auth.js`
-2. Implement signature verification using ethers.js
-3. Verify signed message contains user's wallet address
-4. Extract wallet address from verified signature
-5. Attach wallet address to request object
-6. Handle authentication errors with proper status codes
+2. Implement JWT token generation after wallet signature verification
+3. Verify `Authorization: Bearer <token>` header format
+4. Decode JWT and extract wallet address
+5. Verify user exists in database
+6. Attach user object to request (req.user)
+7. Handle authentication errors with proper status codes (401, 403)
+8. Set token expiration to 7 days
+9. **No refresh token mechanism** - user must reconnect wallet after expiry
+
+**Token Flow**:
+1. User connects wallet and signs message
+2. Backend verifies signature and creates JWT (7-day expiry)
+3. Frontend stores JWT and uses for all API calls
+4. After 7 days, JWT expires and user must reconnect wallet
 
 **Test**:
 - Protected route without auth header - returns 401
-- Protected route with invalid signature - returns 403
-- Protected route with valid signature - proceeds to route handler
-- Wallet address correctly attached to request
+- Protected route with invalid token - returns 403
+- Protected route with valid token - proceeds to route handler
+- Wallet address and user object correctly attached to request
+- Expired token returns 401 with clear message "Token expired, please reconnect wallet"
 
 ### 3.3 Implement Google OAuth Integration
 
-**Task**: Setup Google OAuth for calendar access.
+**Task**: Setup Google OAuth for calendar access with automatic token refresh.
 
 **Steps**:
 1. Create Google Cloud project and enable Calendar API
 2. Create OAuth 2.0 credentials (client ID and secret)
 3. Configure authorized redirect URIs
-4. Install Google Auth library
+4. Install Google Auth library (`googleapis`)
 5. Create `utils/googleAuth.js` with OAuth flow functions
-6. Implement token storage (encrypt tokens before saving to DB)
-7. Implement token refresh logic
+6. Use scope: `https://www.googleapis.com/auth/calendar`
+7. Implement token storage in User model (googleCalendar field)
+8. Implement automatic token refresh when expired
+9. Handle token refresh in middleware before calendar operations
 
 **Test**:
 - Visit OAuth authorization URL - redirects to Google consent screen
 - Grant permissions - receives authorization code
 - Exchange code for tokens - succeeds
-- Tokens stored in database encrypted
-- Refresh expired token - gets new access token
+- Tokens stored in database (googleCalendar field)
+- Refresh expired token - gets new access token automatically
+- Token refresh triggered when expiry_date is past
 
 ### 3.4 Implement Google Calendar Functions
 
@@ -349,66 +449,98 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 3.5 Create Events API Routes
 
-**Task**: Implement RESTful endpoints for event management.
+**Task**: Implement RESTful endpoints for event management with pagination.
 
 **Steps**:
 1. Create `routes/events.js`
 2. POST `/api/events` - Create new event
-   - Validate request body (title, description, dateTime, price, maxAttendees)
-   - Require authentication
-   - Create Google Calendar event
-   - Store event data in MongoDB with calendar IDs
-   - Return event details including Meet link
+   - Require Bearer token authentication
+   - Validate request body (title, description, dateTime, duration, price, maxAttendees)
+   - Accept image upload via Multer (max 8MB, convert to base64)
+   - Store dateTime as UTC in database
+   - Create Google Calendar event with Meet link
+   - Store event data in MongoDB
+   - Return 201 with event details including Meet link
 3. GET `/api/events` - List all active events
-   - Support pagination (skip, limit)
-   - Support filtering (upcoming only, price range)
-   - Return sorted by date
+   - Support pagination (page, limit params)
+   - Default: page=1, limit=20
+   - Support filtering (upcoming only, price range, search by title)
+   - Return sorted by dateTime ascending
+   - Return format: `{ events: [], total: N, page: N, totalPages: N }`
 4. GET `/api/events/:id` - Get single event details
    - Include tickets sold count
    - Include Meet link only for organizer or ticket holders
+   - Populate owner information
 5. PUT `/api/events/:id` - Update event
+   - Require Bearer token
    - Only organizer can update
-   - Sync changes with Google Calendar
+   - **If tickets sold**: Allow updating only title, description, image
+   - **If no tickets sold**: Allow updating all fields including price, dateTime, maxAttendees
+   - Sync changes with Google Calendar (if dateTime changed)
 6. DELETE `/api/events/:id` - Cancel event
+   - Require Bearer token
    - Only organizer can cancel
-   - Remove from Google Calendar
-   - Refund logic (future enhancement placeholder)
+   - **Not allowed if any tickets have been sold**
+   - If no tickets sold: Remove from Google Calendar and mark as deleted
 
 **Test**:
 - Create event with valid data - returns 201 with event details
-- Create event without auth - returns 401
+- Create event without Bearer token - returns 401
 - Create event with missing fields - returns 400
-- Get events list - returns paginated array
-- Get single event - returns correct details
+- Upload image >8MB - returns 413 (payload too large)
+- Get events list with pagination - returns correct page
+- Get events with page=2&limit=10 - returns correct results
+- Get single event - returns correct details with owner populated
 - Update event as non-organizer - returns 403
-- Update event as organizer - succeeds
+- Update event as organizer with no tickets sold - can update all fields
+- Update event as organizer with tickets sold - can only update title/description/image
+- Try updating price after tickets sold - returns 400
+- Delete event with no tickets sold - succeeds
+- Try deleting event with tickets sold - returns 400
 
 ### 3.6 Create Tickets API Routes
 
-**Task**: Implement endpoints for ticket purchasing and management.
+**Task**: Implement endpoints for ticket purchasing with three-state flow.
 
 **Steps**:
 1. Create `routes/tickets.js`
-2. POST `/api/tickets/purchase` - Record ticket purchase
-   - Validate transaction hash on blockchain
-   - Verify payment amount matches ticket price
-   - Store ticket in database
+2. POST `/api/tickets/purchase` - Initiate ticket purchase
+   - Require Bearer token
+   - Validate event exists and has capacity
+   - Create ticket with status: 'created'
+   - Return ticket ID and proceed to blockchain transaction
+3. POST `/api/tickets/confirm` - Confirm blockchain transaction
+   - Require Bearer token
+   - Accept transaction hash
+   - Verify transaction on blockchain (correct amount, event, buyer)
+   - Update ticket status to 'blockchain_added'
    - Add buyer email to Google Calendar event
+   - Update ticket status to 'calendar_added'
+   - Send confirmation email
    - Return success with ticket details
-3. GET `/api/tickets/my-tickets` - Get user's tickets
-   - Require authentication
+4. GET `/api/tickets/my-tickets` - Get user's tickets
+   - Require Bearer token
    - Return all tickets for authenticated wallet
-   - Include event details and Meet links
-4. GET `/api/tickets/event/:eventId` - Get tickets for event
-   - Only organizer can access
-   - Return attendee list with emails
+   - Populate event details with owner information
+   - Include Meet links for calendar_added tickets
+   - Support pagination
+5. GET `/api/tickets/event/:eventId` - Get tickets for event
+   - Require Bearer token
+   - Only event organizer can access
+   - Return attendee list with emails and purchase status
+
+**Ticket State Flow**:
+- `created` → Created in DB, awaiting blockchain confirmation
+- `blockchain_added` → Blockchain payment confirmed
+- `calendar_added` → Successfully added to Google Calendar (final state)
 
 **Test**:
-- Purchase ticket with valid transaction - succeeds
-- Verify blockchain transaction - confirms payment
+- Purchase ticket - creates with 'created' status
+- Confirm with valid transaction - updates to 'blockchain_added' then 'calendar_added'
+- Verify blockchain transaction - confirms correct payment and event
 - Check buyer added to Google Calendar - appears in attendee list
-- Purchase with invalid transaction hash - fails
-- Get my tickets - returns correct tickets only
+- Purchase with invalid transaction hash - fails at confirm step
+- Get my tickets - returns only authenticated user's tickets
 - Non-organizer tries to get event attendees - returns 403
 
 ### 3.7 Create Users API Routes
@@ -438,24 +570,26 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 3.8 Implement Email Notifications
 
-**Task**: Setup email service for ticket confirmations and updates.
+**Task**: Setup SendGrid for ticket confirmations and updates.
 
 **Steps**:
-1. Choose email provider (SendGrid or Resend)
-2. Create account and get API key
-3. Install email service SDK
+1. Create SendGrid account and get API key
+2. Verify sender email address in SendGrid
+3. Install SendGrid SDK (`@sendgrid/mail`)
 4. Create `utils/email.js` with email templates
 5. Implement `sendTicketConfirmation()` - sends ticket purchase email with calendar invite
 6. Implement `sendEventUpdate()` - sends updates to all attendees
-7. Create `.ics` file generator for calendar invites
-8. Add email to ticket purchase flow
+7. Create `.ics` file generator for calendar invites using `ics` library
+8. Add email to ticket purchase flow (after calendar_added status)
+9. Use HTML email templates with responsive design
 
 **Test**:
-- Purchase ticket - confirmation email received
-- Email contains correct event details
+- Purchase ticket - confirmation email received within 30 seconds
+- Email contains correct event details with proper timezone display
 - Calendar invite (.ics) attachment works
 - Meet link in email is clickable
 - Email deliverability >95%
+- Email renders correctly in Gmail, Outlook, Apple Mail
 
 ### 3.9 Add Blockchain Event Listening
 
@@ -504,22 +638,26 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 4.2 Configure Privy Authentication
 
-**Task**: Setup Privy for wallet authentication.
+**Task**: Setup Privy for wallet authentication with network switching.
 
 **Steps**:
 1. Create Privy account and get API key
 2. Wrap app with Privy provider in `app/layout.js`
-3. Configure supported wallets (MetaMask, WalletConnect, Coinbase)
+3. Configure supported wallets (MetaMask, WalletConnect, Coinbase Wallet)
 4. Setup login methods (wallet only for MVP)
-5. Configure network settings (Ethereum Sepolia)
-6. Create `hooks/useAuth.js` custom hook for auth state
+5. Configure default network: Ethereum Sepolia (chainId: 11155111)
+6. Implement automatic network switching if user on wrong network
+7. Create `hooks/useAuth.js` custom hook for auth state
+8. Create `hooks/useNetworkSwitch.js` for network detection and switching
 
 **Test**:
 - Click "Connect Wallet" - modal opens
 - Select MetaMask - connects successfully
 - Check `useAuth()` hook - returns wallet address
+- Connect on mainnet - automatically prompts to switch to Sepolia
 - Disconnect - state updates correctly
 - Refresh page - remains connected (session persists)
+- Network switch succeeds and updates UI
 
 ### 4.3 Setup Zustand State Management
 
@@ -582,22 +720,28 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 4.6 Build Event Details Page
 
-**Task**: Create page showing full event information.
+**Task**: Create page showing full event information with timezone conversion.
 
 **Steps**:
 1. Create `app/events/[id]/page.jsx`
 2. Fetch event details from API using dynamic route
-3. Display full-width banner image
-4. Show event title, description, date/time with timezone
-5. Show price in PYUSD with USD equivalent
-6. Show tickets remaining (X of Y sold)
-7. Create "Buy Ticket" button (prominent, sticky on mobile)
-8. Add organizer information section
-9. Show Google Meet badge
-10. Create `components/PurchaseModal.jsx` for ticket purchase flow
+3. Display full-width banner image (decode base64)
+4. Show event title, description
+5. Convert dateTime from UTC to user's local timezone using moment.js
+6. Display formatted date/time (e.g., "Oct 25, 2025 at 3:00 PM EST")
+7. Show duration in hours/minutes
+8. Show price in PYUSD (max 2 decimal places) with USD equivalent
+9. Show tickets remaining (X of Y sold)
+10. Create "Buy Ticket" button (prominent, sticky on mobile)
+11. Add organizer information section (name, wallet address)
+12. Show Google Meet badge
+13. Create `components/PurchaseModal.jsx` for ticket purchase flow
 
 **Test**:
 - Visit event page - details display correctly
+- Date/time shows in user's local timezone
+- Duration displays correctly (e.g., "2 hours")
+- Price shows max 2 decimals (e.g., "10.50 PYUSD")
 - Ticket count updates in real-time
 - Click "Buy Ticket" - modal opens
 - Event is sold out - button disabled
@@ -606,62 +750,89 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 4.7 Build Ticket Purchase Flow
 
-**Task**: Implement modal for PYUSD ticket purchase.
+**Task**: Implement modal for PYUSD ticket purchase with proper decimal handling.
 
 **Steps**:
 1. Create `components/PurchaseModal.jsx`
-2. Show event summary (name, date, price)
-3. Add email input field for Google Calendar invite
-4. Show PYUSD balance check
-5. Show approval step if needed ("Approve PYUSD spending")
-6. Show purchase confirmation step
-7. Add loading states during transaction
-8. Show success message with Meet link
-9. Add error handling with retry option
-10. Update UI after successful purchase
+2. Show event summary (name, date in user timezone, price)
+3. Add email input field for Google Calendar invite (required)
+4. Check PYUSD balance (convert from 6 decimals to display value)
+5. Show approval step if allowance insufficient
+   - Calculate exact amount or allow more for future purchases
+   - Handle 6 decimal places internally
+6. Show purchase confirmation step with gas estimate
+7. **Show estimated gas fees** before transaction confirmation
+8. Add three-state loading during transaction:
+   - "Initiating purchase..." (creating ticket in DB)
+   - "Confirming blockchain transaction..." (waiting for confirmation)
+   - "Adding to calendar..." (calendar integration)
+9. After blockchain confirmation, call `/api/tickets/confirm` with tx hash
+10. Show success message with Meet link when status = 'calendar_added'
+11. Add error handling with retry option and clear error messages
+12. Update UI after successful purchase
+
+**PYUSD Handling**:
+- Display: Max 2 decimals (e.g., 10.50 PYUSD)
+- Contract: Convert to 6 decimals (10.50 → 10500000)
+- Balance check: Convert from 6 decimals for display
 
 **Test**:
-- Open purchase modal - shows event details
-- Enter email - validates format
-- User has no PYUSD - shows "Insufficient balance" message
-- First purchase - shows two steps (approve + purchase)
-- Subsequent purchase - shows one step (purchase only)
-- Approve PYUSD - transaction succeeds
-- Purchase ticket - transaction succeeds
+- Open purchase modal - shows event details with correct timezone
+- Enter email - validates format (basic email regex)
+- User has insufficient PYUSD - shows clear error message
+- First purchase - shows approval step, then purchase step
+- Approve exact amount or more - transaction succeeds
+- Purchase ticket - creates with 'created' status
+- Blockchain confirms - updates to 'blockchain_added'
+- Calendar added - updates to 'calendar_added'
 - Success - shows confirmation with Meet link
 - Close modal - event page updates ticket count
+- Handle errors at each state transition
 
 ### 4.8 Build Create Event Page
 
-**Task**: Implement event creation wizard for organizers.
+**Task**: Implement event creation wizard with image upload and timezone handling.
 
 **Steps**:
 1. Create `app/events/create/page.jsx`
-2. Require wallet connection (redirect if not connected)
+2. Require wallet connection and Bearer token (redirect if not authenticated)
 3. Check Google Calendar connection (prompt to connect if needed)
 4. Create multi-step form with validation:
-   - Step 1: Title, description, image upload
-   - Step 2: Date, time, timezone picker
-   - Step 3: Price (PYUSD), max attendees
+   - Step 1: Title (required), description (required), image upload
+   - Step 2: Date, time (user's local timezone), duration (hours/minutes)
+   - Step 3: Price in PYUSD (max 2 decimals input), max attendees
    - Step 4: Review and confirm
-5. Create `components/ImageUpload.jsx` for banner upload
-6. Add live preview panel showing event card
-7. Validate all inputs before submission
-8. Call smart contract to create event on-chain
-9. Call backend API to create event with calendar
-10. Show success message with event link
+5. Create `components/ImageUpload.jsx` for banner upload:
+   - Accept jpg, png, webp (max 8MB)
+   - Show preview before upload
+   - Convert to base64 for API submission
+   - Show file size warning if >8MB
+6. Convert selected date/time from user's local timezone to UTC before API call
+7. Add live preview panel showing how event will appear
+8. Validate all inputs before submission:
+   - Date/time must be in future
+   - Price must be positive with max 2 decimals
+   - Max attendees must be positive integer
+   - Image must be <8MB
+9. Call smart contract to create event on-chain (convert price to 6 decimals)
+10. Call backend API POST `/api/events` with all data including base64 image
+11. Show success message with link to new event page
+12. Clear form after successful creation
 
 **Test**:
 - Visit create page without wallet - redirects to home
 - Visit with wallet but no Google - shows "Connect Google" prompt
-- Fill form with invalid data - shows validation errors
-- Upload image - preview appears
+- Fill form with invalid data - shows specific validation errors
+- Upload image >8MB - shows error, prevents submission
+- Upload valid image - preview appears correctly
 - Select date in past - shows error
-- Complete form - preview updates
+- Enter price with >2 decimals - rounds or shows error
+- Complete form - preview updates in real-time
 - Submit form - smart contract transaction initiated
-- Transaction succeeds - backend API called
-- Google Calendar event created
+- Transaction succeeds - backend API called with UTC datetime
+- Google Calendar event created with correct timezone
 - Redirects to new event page
+- Event displays with correct date/time in viewer's timezone
 
 ### 4.9 Build Organizer Dashboard
 
@@ -753,15 +924,18 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 6. Implement `withdrawRevenue()` contract call
 7. Add PYUSD token approval flow
 8. Handle transaction states (pending, confirmed, failed)
-9. Show gas estimation before transactions
-10. Add transaction receipts display
+9. **Show gas estimation before all transactions** (createEvent, purchaseTicket, withdrawRevenue)
+10. Display estimated gas in user-friendly format (e.g., "Est. gas: 0.002 ETH")
+11. Add transaction receipts display with Etherscan link
 
 **Test**:
-- Create event - calls contract, transaction succeeds
-- Purchase ticket - approves PYUSD first, then purchases
-- Withdraw revenue - calls contract, funds transferred
-- Transaction pending - shows loading state
+- Create event - shows gas estimate, calls contract, transaction succeeds
+- Purchase ticket - shows gas estimate, approves PYUSD first, then purchases
+- **Try purchasing same event twice with same wallet - transaction reverts**
+- Withdraw revenue - shows gas estimate, calls contract, funds transferred
+- Transaction pending - shows loading state with spinner
 - Transaction failed - shows error with details
+- Gas estimation fails - shows warning but allows proceed
 - View transaction - links to Sepolia Etherscan
 
 ---
@@ -922,21 +1096,25 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 **Task**: Verify security measures are in place.
 
 **Steps**:
-1. Test authentication on protected routes
+1. Test Bearer token authentication on protected routes
 2. Try accessing other user's dashboard - should fail
 3. Try modifying other user's events - should fail
-4. Test SQL injection attempts in API
+4. Test MongoDB injection attempts in API queries
 5. Test XSS attempts in event descriptions
-6. Verify environment variables not exposed
-7. Check API rate limiting works
-8. Verify Google OAuth tokens are encrypted
+6. Verify environment variables not exposed in frontend
+7. Verify Google OAuth tokens stored securely in database
+8. Test JWT token expiration and refresh
+9. Verify image upload size limits enforced
+10. Test wallet signature verification
 
 **Test**:
-- Unauthorized access attempts fail
-- Protected routes require authentication
+- Unauthorized access attempts fail (401)
+- Protected routes require valid Bearer token
 - Input validation prevents injection attacks
-- Sensitive data is encrypted
-- Rate limiting prevents abuse
+- Sensitive data (Google tokens) stored securely
+- JWT expiration works correctly
+- Image size limit enforced at API level
+- Invalid signatures rejected
 
 ---
 
@@ -1233,22 +1411,32 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ### 9.1 Create Demo Accounts
 
-**Task**: Set up accounts for demo presentation.
+**Task**: Set up accounts for demo presentation (manual event creation, no seed data).
 
 **Steps**:
-1. Create organizer wallet with Sepolia ETH
-2. Create buyer wallet(s) with PYUSD and ETH
-3. Connect Google account to organizer
-4. Create 2-3 sample events
-5. Purchase tickets from sample events
+1. Create organizer wallet with Sepolia ETH (for gas)
+2. Create buyer wallet(s) with PYUSD and Sepolia ETH
+3. Connect Google account to organizer wallet
+4. **Manually create 2-3 events during demo setup** (no automated seed data)
+5. Have buyer wallet ready to purchase ticket during live demo
 6. Prepare screenshots of key features
-7. Test demo flow multiple times
+7. Test complete demo flow multiple times
+8. Prepare backup demo in case of network issues
+
+**Demo Strategy**:
+- Keep it real with actual transactions
+- Pre-create 1-2 events so homepage shows content
+- Do live ticket purchase during demo
+- Show actual Google Calendar integration
+- Display real blockchain transactions on Etherscan
 
 **Test**:
-- Demo wallets have sufficient funds
-- Sample events display correctly
+- Demo wallets have sufficient funds (at least 0.1 ETH + 50 PYUSD)
+- Google account connected and calendar accessible
+- Sample events display correctly on homepage
 - Can complete full flow in <3 minutes
 - All features accessible quickly
+- Backup plan ready if primary demo fails
 
 ### 9.2 Record Demo Video
 
@@ -1444,16 +1632,39 @@ The MVP is complete when:
 - Handle errors gracefully
 - Validate all user inputs
 - Use environment variables for configuration
+- Keep it simple - avoid over-engineering
 
 ### Common Pitfalls to Avoid
 - Don't store sensitive data in code or git
 - Don't skip smart contract testing
-- Don't forget to encrypt Google OAuth tokens
 - Don't expose API keys in frontend
 - Don't skip input validation
 - Don't assume transactions will succeed
 - Don't forget mobile responsiveness
 - Don't skip error handling
+- Don't forget timezone conversions (UTC in DB, local for display)
+- Don't forget PYUSD has 6 decimals (display max 2)
+- Don't forget image size limit (8MB)
+
+### Important Specifications to Remember
+- **Node.js**: 20.12.2
+- **Database**: Mongoose ODM
+- **Authentication**: Bearer tokens (JWT, 7-day expiry, no refresh token)
+- **PYUSD Decimals**: 6 (display max 2)
+- **Image Storage**: Base64 in MongoDB (8MB limit)
+- **Timezone**: UTC in database, convert to user's local using moment.js
+- **Email**: SendGrid
+- **Testing**: Jest for backend, Hardhat for contracts
+- **Network**: Sepolia (auto-switch if wrong network)
+- **Ticket States**: created → blockchain_added → calendar_added
+- **One Wallet = One Account**: Strict 1:1 mapping, no wallet transfers in MVP
+- **One Ticket Per Event**: One wallet can only buy one ticket per event
+- **Withdrawal**: Organizers can withdraw anytime (no time restrictions)
+- **Event Editing**: After tickets sold, only title/description/image can be updated
+- **Event Deletion**: Not allowed once any tickets sold
+- **Refunds**: Not in MVP (placeholder in contract for future)
+- **Smart Contract**: Immutable (no proxy pattern for MVP)
+- **Gas Estimation**: Show before all transactions
 
 ### When Stuck
 1. Check documentation for the specific technology
@@ -1468,10 +1679,60 @@ The MVP is complete when:
 - Hardhat Documentation: https://hardhat.org
 - Shadcn/ui Components: https://ui.shadcn.com
 - PYUSD Information: https://www.paypal.com/us/digital-wallet/manage-money/crypto/pyusd
+- Mongoose Documentation: https://mongoosejs.com
+- Moment.js Documentation: https://momentjs.com
+- SendGrid Documentation: https://docs.sendgrid.com
 
 ---
 
-**Document Version**: 1.0  
+## Environment Variables
+
+### Contracts (.env)
+```
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
+PRIVATE_KEY=your_private_key_here
+ETHERSCAN_API_KEY=your_etherscan_api_key
+PYUSD_ADDRESS=0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9
+```
+
+### Server (.env)
+```
+PORT=5000
+NODE_ENV=development
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/ticketify
+JWT_SECRET=your_jwt_secret_here
+JWT_EXPIRATION=7d
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/google/callback
+
+# SendGrid
+SENDGRID_API_KEY=your_sendgrid_api_key
+SENDGRID_FROM_EMAIL=noreply@ticketify.xyz
+
+# Blockchain
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
+CONTRACT_ADDRESS=deployed_contract_address
+PYUSD_ADDRESS=0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9
+
+# Frontend URL (for CORS)
+FRONTEND_URL=http://localhost:3000
+```
+
+### Client (.env.local)
+```
+NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_CONTRACT_ADDRESS=deployed_contract_address
+NEXT_PUBLIC_PYUSD_ADDRESS=0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
+```
+
+---
+
+**Document Version**: 1.1  
 **Last Updated**: October 21, 2025  
 **Status**: Ready for Implementation
 
