@@ -1,0 +1,8 @@
+# Dependencies - ignore in all directories
+**/node_modules/
+node_modules/
+
+# Package lock files - ignore in all directories
+**/package-lock.json
+package-lock.json
+
