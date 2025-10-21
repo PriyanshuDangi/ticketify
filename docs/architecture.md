@@ -73,24 +73,42 @@ server/
 
 ### `/contracts` - Smart Contracts
 
-**Technology**: Solidity with Hardhat 3
+**Technology**: Solidity 0.8.x with Hardhat 2.26.3
 
 **Purpose**: Immutable blockchain contracts for ticket sales and revenue distribution.
 
 **Directory Structure**:
 ```
 contracts/
-├── contracts/       # Solidity smart contracts
-├── scripts/         # Deployment and interaction scripts
-└── test/            # Contract test suites
+├── contracts/           # Solidity smart contracts
+│   └── Lock.sol        # Sample contract (will be replaced)
+├── scripts/            # Deployment scripts
+├── test/               # Contract test suites (TypeScript)
+│   └── Lock.ts
+├── ignition/           # Hardhat Ignition deployment modules
+│   └── modules/
+├── hardhat.config.ts   # Hardhat configuration
+├── package.json        # Dependencies
+├── .env.example        # Environment variables template
+└── tsconfig.json       # TypeScript configuration
 ```
 
-**Key Contracts**:
+**Key Contracts** (to be implemented):
 - `Ticketify.sol` - Main contract (event creation, ticket purchases, withdrawals)
 - `IPYUSD.sol` - ERC-20 interface for PYUSD token
 
+**Dependencies**:
+- `hardhat` v2.26.3 - Development environment
+- `@openzeppelin/contracts` v5.4.0 - Secure, audited contract library
+- `@nomicfoundation/hardhat-toolbox-viem` v4.1.0 - Toolbox with Viem integration
+
 **Network**: Ethereum Sepolia (Chain ID: 11155111)  
 **Token**: PYUSD at `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
+
+**Configuration Notes**:
+- Uses TypeScript for tests and scripts (allowed per project rules)
+- Viem library used instead of Ethers.js (Hardhat toolbox default)
+- Solidity compiler optimization enabled for gas efficiency
 
 ---
 
@@ -136,9 +154,15 @@ User → Frontend (client/) → Backend API (server/) → MongoDB
 
 **Contracts Directory**:
 - `.gitignore` - Hardhat ignores (artifacts, cache, .env)
-- `contracts/` - Solidity source files (to be added)
-- `scripts/` - Deployment scripts (to be added)
-- `test/` - Contract tests (to be added)
+- `hardhat.config.ts` - TypeScript configuration for Hardhat with Sepolia network setup
+- `package.json` - Dependencies including OpenZeppelin contracts v5.4.0
+- `.env.example` - Template for environment variables (RPC URLs, private keys, PYUSD address)
+- `contracts/` - Solidity source files
+  - `Lock.sol` - Sample contract from Hardhat init (to be replaced with Ticketify.sol)
+- `scripts/` - Deployment scripts
+- `test/` - Contract test suites (TypeScript with Viem)
+  - `Lock.ts` - Sample test file
+- `ignition/modules/` - Hardhat Ignition deployment modules
 
 **Docs Directory**:
 - `implementation-plan.md` - Step-by-step development guide
@@ -178,6 +202,39 @@ User → Frontend (client/) → Backend API (server/) → MongoDB
 
 ---
 
-**Status**: Initial structure complete (Step 1.1)  
-**Next**: Initialize each component (Steps 1.2-1.5)
+## Smart Contract Environment Details
+
+### Hardhat Configuration
+
+**File**: `contracts/hardhat.config.ts`
+
+The Hardhat configuration uses TypeScript and includes:
+- Solidity compiler settings with optimization enabled
+- Sepolia testnet configuration (requires RPC URL and private key)
+- Etherscan integration for contract verification
+- Viem toolbox for testing and deployment
+
+### Environment Variables
+
+**File**: `contracts/.env.example`
+
+Required environment variables for smart contract deployment:
+```
+SEPOLIA_RPC_URL - Alchemy or Infura RPC endpoint for Sepolia testnet
+PRIVATE_KEY - Deployer wallet private key (without 0x prefix)
+ETHERSCAN_API_KEY - For contract verification on Etherscan
+PYUSD_ADDRESS - PYUSD token contract address on Sepolia
+```
+
+### Dependencies
+
+**OpenZeppelin Contracts** (v5.4.0):
+- Provides secure, audited implementations of ERC-20 interfaces
+- Used for PYUSD token interactions
+- Includes access control patterns (Ownable, ReentrancyGuard)
+
+---
+
+**Status**: Smart contract environment ready (Steps 1.1-1.2 complete)  
+**Next**: Backend server setup (Step 1.3)
 

@@ -29,9 +29,38 @@
 
 ---
 
+#### ✅ 1.2 Setup Smart Contract Environment (Day 1)
+**Completed**: October 21, 2025
+
+**What was done**:
+- Initialized Hardhat project with `npx hardhat init`
+- Installed OpenZeppelin contracts library (v5.4.0) for ERC-20 interfaces
+- Created `.env.example` with placeholders for Sepolia RPC, private key, and PYUSD address
+
+**Dependencies installed**:
+- `hardhat` v2.26.3
+- `@nomicfoundation/hardhat-toolbox-viem` v4.1.0
+- `@openzeppelin/contracts` v5.4.0
+
+**Configuration files created**:
+- `hardhat.config.ts` - TypeScript configuration (uses Viem toolbox)
+- `.env.example` - Environment variables template with PYUSD address for Sepolia
+
+**Validation tests passed**:
+- ✅ `npx hardhat` shows all available tasks
+- ✅ Hardhat config exists with proper network setup
+- ✅ OpenZeppelin contracts listed in package.json
+- ✅ `.env.example` created with all required placeholders
+
+**Notes for developers**:
+- Using TypeScript for contracts (allowed per project rules)
+- Using Viem instead of Ethers.js in Hardhat toolbox (Hardhat 2.26.3 default)
+- PYUSD Sepolia address: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
+
+---
+
 ## Next Steps
 
-- [ ] 1.2 Setup Smart Contract Environment (Hardhat 3 initialization)
 - [ ] 1.3 Setup Backend Server (Express.js with MongoDB)
 - [ ] 1.4 Setup Frontend Application (Next.js 14)
 - [ ] 1.5 Setup MongoDB Database (Atlas cluster)
