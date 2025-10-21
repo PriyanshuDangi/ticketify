@@ -26,7 +26,7 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 - **[Architecture](./architecture.md)** - System architecture and data flow (to be populated)
 
 **Technology Specifications:**
-- **Node.js**: 20.12.2
+- **Node.js**: 22.21.0
 - **Database**: MongoDB with Mongoose ODM
 - **Image Upload**: Multer (8MB limit, base64 storage)
 - **Email Service**: SendGrid
@@ -99,7 +99,7 @@ https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3
 
 **Steps**:
 1. Navigate to `server/` directory
-2. Initialize npm project with Node.js 20.12.2
+2. Initialize npm project with Node.js 22.21.0
 3. Install dependencies: Express.js, Mongoose, dotenv, cors, nodemon, multer, bcrypt, jsonwebtoken
 4. Create basic folder structure: `routes/`, `controllers/`, `models/`, `middleware/`, `utils/`, `uploads/`
 5. Create `server.js` as entry point
@@ -110,7 +110,7 @@ https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3
 - Run `npm start` - server should start without errors
 - Visit `http://localhost:PORT/health` - should return 200 OK (create basic health endpoint first)
 - All required folders exist
-- Node version check: `node -v` should show 20.12.2
+- Node version check: `node -v` should show 22.21.0
 
 ### 1.4 Setup Frontend Application
 
@@ -1670,7 +1670,7 @@ The MVP is complete when:
 - Don't forget image size limit (8MB)
 
 ### Important Specifications to Remember
-- **Node.js**: 20.12.2
+- **Node.js**: 22.21.0
 - **Database**: Mongoose ODM
 - **Authentication**: Bearer tokens (JWT, 7-day expiry, no refresh token)
 - **PYUSD Decimals**: 6 (display max 2)

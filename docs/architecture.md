@@ -42,7 +42,7 @@ ticketify/
 
 ### `/server` - Backend API
 
-**Technology**: Node.js 20.12.2 with Express.js
+**Technology**: Node.js 22.21.0 with Express.js
 
 **Purpose**: RESTful API server handling business logic, database operations, and external service integrations.
 
@@ -159,7 +159,7 @@ User → Frontend (client/) → Backend API (server/) → MongoDB
 | UI Library | Shadcn/ui + Tailwind | Latest |
 | State Management | Zustand | ^4.4.0 |
 | Wallet Auth | Privy | ^1.0.0 |
-| Backend | Node.js + Express | 20.12.2 |
+| Backend | Node.js + Express | 22.21.0 |
 | Database | MongoDB + Mongoose | ^8.0.0 |
 | Smart Contracts | Solidity + Hardhat | 0.8.20 / ^3.0.0 |
 | Blockchain Library | Ethers.js | ^6.8.0 |

@@ -81,7 +81,7 @@ docs/
 
 **Technology Stack**:
 - **Frontend**: Next.js 14, React, Tailwind CSS, Shadcn/ui, Zustand
-- **Backend**: Node.js 20.12.2, Express.js, Mongoose
+- **Backend**: Node.js 22.21.0, Express.js, Mongoose
 - **Database**: MongoDB with Mongoose ODM
 - **Blockchain**: Solidity, Hardhat 3, Ethers.js v6
 - **Integrations**: Google Calendar API, PYUSD, Privy, SendGrid
@@ -99,7 +99,7 @@ docs/
 
 | Specification | Value |
 |---------------|-------|
-| Node.js Version | 20.12.2 |
+| Node.js Version | 22.21.0 |
 | Database | MongoDB + Mongoose |
 | Authentication | JWT (7-day expiry, no refresh) |
 | Image Storage | Base64 in MongoDB (8MB max) |

@@ -2,7 +2,7 @@
 
 **Version**: 1.0  
 **Last Updated**: October 21, 2025  
-**Node.js Version**: 20.12.2
+**Node.js Version**: 22.21.0
 
 ---
 
@@ -11,7 +11,7 @@
 This guide provides step-by-step instructions for setting up the complete Ticketify development environment including smart contracts, backend server, and frontend application.
 
 **Prerequisites**:
-- Node.js 20.12.2
+- Node.js 22.21.0
 - npm or yarn
 - Git
 - MetaMask or compatible Web3 wallet
@@ -47,11 +47,11 @@ cd ticketify
 
 ```bash
 node -v
-# Should output: v20.12.2
+# Should output: v22.21.0
 
 # If not installed, use nvm:
-nvm install 20.12.2
-nvm use 20.12.2
+nvm install 22.21.0
+nvm use 22.21.0
 ```
 
 ### 3. Project Structure
@@ -620,7 +620,7 @@ NEXT_PUBLIC_ETHERSCAN_URL=https://sepolia.etherscan.io
 
 **Solution**:
 ```bash
-nvm use 20.12.2
+nvm use 22.21.0
 ```
 
 #### 2. MongoDB Connection Failed
