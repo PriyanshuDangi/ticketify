@@ -99,6 +99,7 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 
 ### Core Technologies
 - **Frontend**: Next.js 14 with React
+- **State Management**: Zustand
 - **UI/Styling**: Tailwind CSS with Shadcn/ui components
 - **Web3**: Privy for wallet connections and authentication
 - **Backend**: Node.js with Express.js
@@ -176,7 +177,7 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 
 ## 5. User Interface Design
 
-Built with Tailwind CSS and Shadcn/ui for a modern, accessible, and consistent user experience.
+Built with Tailwind CSS and Shadcn/ui for a modern, accessible, and consistent user experience. Zustand manages client-side state for efficient data flow and reactivity.
 
 ### Key Pages
 
@@ -306,7 +307,8 @@ Built with Tailwind CSS and Shadcn/ui for a modern, accessible, and consistent u
 **Week 1:**
 - Smart contract development with Hardhat 3 and PYUSD integration
 - Node.js/Express.js backend API setup with MongoDB
-- Basic frontend with Shadcn/ui (Homepage, Event Details, Create Event)
+- Basic frontend with Shadcn/ui and Zustand state management
+- Core pages: Homepage, Event Details, Create Event
 - Privy wallet authentication setup
 - Google OAuth integration
 
@@ -579,6 +581,7 @@ Built with Tailwind CSS and Shadcn/ui for a modern, accessible, and consistent u
 - Solidity smart contract development
 - Hardhat 3 for contract deployment and testing
 - React/Next.js frontend development
+- Zustand for state management
 - Tailwind CSS and Shadcn/ui component library
 - Node.js and Express.js backend development
 - MongoDB database design
