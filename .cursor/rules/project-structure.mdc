@@ -1,0 +1,21 @@
+---
+alwaysApply: true
+---
+
+# Ticketify Project Structure
+
+This is a blockchain-based ticketing application with the following structure:
+
+## Directory Organization
+
+- **client/** - Frontend application code
+- **server/** - Backend API and database code
+- **contracts/** - Smart contracts for blockchain integration
+- **docs/** - Project documentation
+
+## Key Guidelines
+
+- Keep frontend code isolated in the `client/` directory
+- All backend logic and database operations belong in `server/`
+- Smart contract code and blockchain-related logic goes in `contracts/`
+- Maintain clear separation of concerns between these layers
