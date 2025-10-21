@@ -57,17 +57,57 @@ ticketify/
 **Database**: MongoDB with Mongoose ODM  
 **Authentication**: Bearer tokens (JWT, 7-day expiry)
 
-**Directory Structure** (to be created):
+**Directory Structure**:
 ```
 server/
-├── routes/          # API route definitions
-├── controllers/     # Request handlers
-├── models/          # Mongoose schemas
-├── middleware/      # Auth, validation, error handling
+├── routes/          # API route definitions (ready for routes)
+├── controllers/     # Request handlers (ready for controllers)
+├── models/          # Mongoose schemas (ready for models)
+├── middleware/      # Auth, validation, error handling (ready)
 ├── utils/           # Helper functions
-├── uploads/         # Image storage (base64)
-└── logs/            # Application logs
+│   ├── db.js               # MongoDB connection utility
+│   └── multerConfig.js     # Image upload configuration
+├── uploads/         # Image storage directory
+├── logs/            # Application logs directory
+├── server.js        # Main entry point
+├── package.json     # Dependencies and scripts
+├── env.template     # Environment variables template
+└── README.md        # Backend documentation
 ```
+
+**Key Files Explained**:
+
+**`server.js`** - Main application entry point
+- Express app initialization
+- CORS configuration for frontend
+- JSON and URL-encoded body parsing
+- Health check endpoint at `/health`
+- Error handling middleware
+- Database connection and server startup
+
+**`utils/db.js`** - MongoDB connection manager
+- Mongoose connection with retry logic
+- Connection event listeners (error, disconnect)
+- Graceful shutdown on SIGINT
+- Connection pooling configuration
+- Timeout settings (5s server selection, 45s socket)
+
+**`utils/multerConfig.js`** - File upload configuration
+- Memory storage for base64 conversion
+- 8MB file size limit
+- File type filtering (JPEG, PNG, WebP only)
+- Error handling for invalid files
+- Used for event banner image uploads
+
+**Environment Variables** (see `env.template`):
+- Server: PORT, NODE_ENV
+- Database: MONGODB_URI
+- Auth: JWT_SECRET, JWT_EXPIRATION
+- Google: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
+- Email: SENDGRID_API_KEY, SENDGRID_FROM_EMAIL
+- Blockchain: SEPOLIA_RPC_URL, CONTRACT_ADDRESS, PYUSD_ADDRESS
+- CORS: FRONTEND_URL
+- Upload: MAX_FILE_SIZE
 
 ---
 
@@ -164,6 +204,20 @@ User → Frontend (client/) → Backend API (server/) → MongoDB
   - `Lock.ts` - Sample test file
 - `ignition/modules/` - Hardhat Ignition deployment modules
 
+**Server Directory** (Backend API):
+- `server.js` - Main entry point, Express app configuration, health endpoint
+- `package.json` - Dependencies (express, mongoose, jwt, multer, ethers, googleapis, sendgrid)
+- `env.template` - Environment variables template (copy to .env)
+- `README.md` - Backend setup and documentation
+- `utils/db.js` - MongoDB connection with Mongoose, graceful shutdown
+- `utils/multerConfig.js` - Image upload config (8MB limit, JPEG/PNG/WebP)
+- `routes/` - API route definitions (to be populated)
+- `controllers/` - Request handlers (to be populated)
+- `models/` - Mongoose schemas (to be populated)
+- `middleware/` - Auth and validation (to be populated)
+- `uploads/` - Image storage directory
+- `logs/` - Application logs directory
+
 **Docs Directory**:
 - `implementation-plan.md` - Step-by-step development guide
 - `database-spec.md` - MongoDB schemas
@@ -235,6 +289,6 @@ PYUSD_ADDRESS - PYUSD token contract address on Sepolia
 
 ---
 
-**Status**: Smart contract environment ready (Steps 1.1-1.2 complete)  
-**Next**: Backend server setup (Step 1.3)
+**Status**: Backend server infrastructure ready (Steps 1.1-1.3 complete)  
+**Next**: Frontend application setup (Step 1.4)
 
