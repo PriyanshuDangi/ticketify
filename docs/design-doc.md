@@ -50,7 +50,7 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 **Seamless 8-Step Experience:**
 1. Browse available events
 2. Click "Buy Ticket"
-3. Connect crypto wallet (MetaMask, WalletConnect, Coinbase Wallet)
+3. Connect wallet using Privy (supports multiple wallet providers)
 4. Enter email address for Google Calendar invite
 5. Approve PYUSD spending (one-time if first purchase)
 6. Confirm purchase transaction
@@ -99,9 +99,11 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 
 ### Core Technologies
 - **Frontend**: Next.js 14 with React and Tailwind CSS
-- **Web3**: Wagmi + Viem for Ethereum, RainbowKit for wallet connections
-- **Backend**: Next.js API routes with PostgreSQL database
+- **Web3**: Privy for wallet connections and authentication
+- **Backend**: Node.js with Express.js
+- **Database**: MongoDB
 - **Blockchain**: Solidity smart contracts on Ethereum (Sepolia testnet, then Mainnet)
+- **Contract Deployment**: Hardhat 3
 - **Storage**: IPFS (Pinata) for event images
 - **Email**: SendGrid or Resend for notifications
 
@@ -112,9 +114,9 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 - **The Graph**: Blockchain event indexing
 
 ### Infrastructure
-- **Hosting**: Vercel
-- **Database**: Mongodb
-- **Backend Hosting**: Render
+- **Frontend Hosting**: Vercel
+- **Backend Hosting**: Render or Railway
+- **Database**: MongoDB Atlas
 
 ---
 
@@ -244,7 +246,7 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 - Advanced analytics dashboard: $20 PYUSD/month
 
 ### Cost Structure
-- Infrastructure: ~$50/month (Vercel, Supabase, APIs)
+- Infrastructure: ~$50/month (Vercel, MongoDB Atlas, Render, APIs)
 - Google Calendar API: Free tier (up to 1M operations/day)
 - Email service: ~$20/month (SendGrid)
 - Gas costs: Paid by users (organizers for event creation, buyers for tickets)
@@ -298,9 +300,10 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 ### Phase 1: MVP - ETHGlobal Submission (Weeks 1-2)
 
 **Week 1:**
-- Smart contract development and PYUSD integration
+- Smart contract development with Hardhat 3 and PYUSD integration
+- Node.js/Express.js backend API setup with MongoDB
 - Basic frontend (Homepage, Event Details, Create Event)
-- Wallet connection setup
+- Privy wallet authentication setup
 - Google OAuth integration
 
 **Week 2:**
@@ -427,7 +430,7 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 - Comprehensive test coverage before deployment
 
 ### Data Privacy
-- Email addresses encrypted at rest in database
+- Email addresses encrypted at rest in MongoDB
 - Google OAuth tokens securely encrypted (AES-256)
 - GDPR compliance: Users can request data export/deletion
 - Attendee privacy: Emails never shared with other attendees
@@ -570,12 +573,14 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 
 ### Required Skills
 - Solidity smart contract development
+- Hardhat 3 for contract deployment and testing
 - React/Next.js frontend development
-- PostgreSQL database design
+- Node.js and Express.js backend development
+- MongoDB database design
 - Google Calendar API integration
-- Web3 integration (Wagmi, Ethers.js)
+- Privy integration for wallet authentication
 - UI/UX design
-- DevOps (Vercel, GitHub Actions)
+- DevOps (Vercel, Render, GitHub Actions)
 
 ---
 
