@@ -77,14 +77,14 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 **📖 Reference**: [environment-setup.md - Smart Contracts Setup](./environment-setup.md#smart-contracts-setup)
 
+reference this for hardhat 3
+https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3
+
 **Steps**:
 1. Navigate to `contracts/` directory
-2. Initialize npm project
-3. Install Hardhat 3 as dev dependency
-4. Install OpenZeppelin contracts for ERC-20 interfaces
-5. Create `hardhat.config.js` with Sepolia testnet configuration
-6. Create `contracts/`, `scripts/`, and `test/` subdirectories
-7. Create `.env.example` with placeholder for private key and RPC URL
+2. Do `npx hardhat --init`
+3. Install OpenZeppelin contracts for ERC-20 interfaces
+4. Create `.env.example` with placeholder for private key and RPC URL
 
 **Test**:
 - Run `npx hardhat` - should show available tasks

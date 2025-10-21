@@ -1,0 +1,38 @@
+# Dependencies
+node_modules
+
+# Hardhat
+cache
+artifacts
+
+# TypeScript
+typechain
+typechain-types
+
+# Environment Variables
+.env
+.env.local
+
+# Coverage
+coverage
+coverage.json
+
+# Hardhat Ignition default folder for deployments against a local node
+ignition/deployments/chain-31337
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
