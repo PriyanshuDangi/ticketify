@@ -98,7 +98,8 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 ## 3. Technology Stack
 
 ### Core Technologies
-- **Frontend**: Next.js 14 with React and Tailwind CSS
+- **Frontend**: Next.js 14 with React
+- **UI/Styling**: Tailwind CSS with Shadcn/ui components
 - **Web3**: Privy for wallet connections and authentication
 - **Backend**: Node.js with Express.js
 - **Database**: MongoDB
@@ -175,6 +176,8 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 
 ## 5. User Interface Design
 
+Built with Tailwind CSS and Shadcn/ui for a modern, accessible, and consistent user experience.
+
 ### Key Pages
 
 **Homepage**
@@ -224,7 +227,8 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 - Tabs: Upcoming, Past
 
 ### Mobile Optimization
-- Responsive design for all screen sizes
+- Responsive design for all screen sizes with Tailwind CSS breakpoints
+- Shadcn/ui components optimized for mobile
 - Bottom navigation for easy access
 - Large touch targets (48px minimum)
 - Progressive Web App (PWA) support
@@ -302,7 +306,7 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 **Week 1:**
 - Smart contract development with Hardhat 3 and PYUSD integration
 - Node.js/Express.js backend API setup with MongoDB
-- Basic frontend (Homepage, Event Details, Create Event)
+- Basic frontend with Shadcn/ui (Homepage, Event Details, Create Event)
 - Privy wallet authentication setup
 - Google OAuth integration
 
@@ -575,6 +579,7 @@ Ticketify automates the entire flow: users pay with PYUSD → automatically adde
 - Solidity smart contract development
 - Hardhat 3 for contract deployment and testing
 - React/Next.js frontend development
+- Tailwind CSS and Shadcn/ui component library
 - Node.js and Express.js backend development
 - MongoDB database design
 - Google Calendar API integration
