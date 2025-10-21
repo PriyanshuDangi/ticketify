@@ -18,6 +18,13 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 - Basic organizer dashboard
 - Email notifications
 
+**📚 Reference Documents**:
+- **[Database Schema](./database-spec.md)** - Complete Mongoose models, indexes, and relationships
+- **[API Specification](./api-spec.md)** - All REST endpoints, request/response formats, and error codes
+- **[Environment Setup](./environment-setup.md)** - Step-by-step setup guide for all services
+- **[Design Document](./design-doc.md)** - Product requirements and architecture
+- **[Architecture](./architecture.md)** - System architecture and data flow (to be populated)
+
 **Technology Specifications:**
 - **Node.js**: 20.12.2
 - **Database**: MongoDB with Mongoose ODM
@@ -48,6 +55,8 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ## Phase 1: Project Setup & Infrastructure (Day 1)
 
+**📖 Setup Guide**: Follow detailed instructions in [environment-setup.md](./environment-setup.md)
+
 ### 1.1 Initialize Project Structure
 
 **Task**: Create the monorepo structure with three main directories.
@@ -65,6 +74,8 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 ### 1.2 Setup Smart Contract Environment
 
 **Task**: Initialize Hardhat 3 project for smart contract development.
+
+**📖 Reference**: [environment-setup.md - Smart Contracts Setup](./environment-setup.md#smart-contracts-setup)
 
 **Steps**:
 1. Navigate to `contracts/` directory
@@ -84,6 +95,8 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 **Task**: Initialize Express.js backend with MongoDB connection using Mongoose.
 
+**📖 Reference**: [environment-setup.md - Backend Server Setup](./environment-setup.md#backend-server-setup)
+
 **Steps**:
 1. Navigate to `server/` directory
 2. Initialize npm project with Node.js 20.12.2
@@ -102,6 +115,8 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 ### 1.4 Setup Frontend Application
 
 **Task**: Initialize Next.js 14 project with required dependencies.
+
+**📖 Reference**: [environment-setup.md - Frontend Application Setup](./environment-setup.md#frontend-application-setup)
 
 **Steps**:
 1. Navigate to `client/` directory
@@ -125,6 +140,8 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 ### 1.5 Setup MongoDB Database
 
 **Task**: Create MongoDB Atlas cluster and configure Mongoose connection.
+
+**📖 Reference**: [environment-setup.md - MongoDB Atlas](./environment-setup.md#mongodb-atlas)
 
 **Steps**:
 1. Create MongoDB Atlas account (or use existing)
@@ -322,6 +339,8 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 **Task**: Define Mongoose schemas for all data entities.
 
+**📖 Reference**: See complete schemas in [database-spec.md](./database-spec.md)
+
 **Steps**:
 1. Create `models/User.js` with schema:
    ```javascript
@@ -451,6 +470,8 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 **Task**: Implement RESTful endpoints for event management with pagination.
 
+**📖 Reference**: See complete API specs in [api-spec.md](./api-spec.md#events-api)
+
 **Steps**:
 1. Create `routes/events.js`
 2. POST `/api/events` - Create new event
@@ -501,6 +522,8 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 ### 3.6 Create Tickets API Routes
 
 **Task**: Implement endpoints for ticket purchasing with three-state flow.
+
+**📖 Reference**: See complete API specs in [api-spec.md](./api-spec.md#tickets-api)
 
 **Steps**:
 1. Create `routes/tickets.js`
@@ -1674,6 +1697,14 @@ The MVP is complete when:
 5. Check similar examples in codebase
 
 ### Resources
+
+**Project Documentation**:
+- [Database Specification](./database-spec.md) - All MongoDB schemas and indexes
+- [API Specification](./api-spec.md) - Complete REST API documentation
+- [Environment Setup Guide](./environment-setup.md) - Setup instructions for all services
+- [Design Document](./design-doc.md) - Product requirements and features
+
+**External Documentation**:
 - Google Calendar API: https://developers.google.com/calendar
 - Privy Documentation: https://docs.privy.io
 - Hardhat Documentation: https://hardhat.org
@@ -1686,6 +1717,8 @@ The MVP is complete when:
 ---
 
 ## Environment Variables
+
+**📖 Complete Reference**: See [environment-setup.md - Environment Variables Reference](./environment-setup.md#environment-variables-reference)
 
 ### Contracts (.env)
 ```
