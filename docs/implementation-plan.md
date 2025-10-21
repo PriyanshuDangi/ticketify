@@ -766,4 +766,712 @@ This implementation plan breaks down the Ticketify MVP into small, testable step
 
 ---
 
+## Phase 5: Integration & Testing (Day 10)
+
+### 5.1 End-to-End Event Creation Test
+
+**Task**: Verify complete event creation flow works.
+
+**Steps**:
+1. Connect wallet on frontend
+2. Connect Google account
+3. Fill out event creation form
+4. Submit and wait for transaction
+5. Verify event created on blockchain (check Etherscan)
+6. Verify event stored in MongoDB
+7. Verify Google Calendar event created with Meet link
+8. Verify event appears on homepage
+9. Verify event page is accessible
+
+**Test**:
+- Complete flow executes without errors
+- Event ID matches between smart contract and backend
+- Google Calendar event has correct details
+- Meet link is valid and accessible
+- Event displays correctly on frontend
+- All data synced across systems
+
+### 5.2 End-to-End Ticket Purchase Test
+
+**Task**: Verify complete ticket purchasing flow works.
+
+**Steps**:
+1. Connect different wallet (buyer account)
+2. Get test PYUSD from faucet or swap
+3. Navigate to event details page
+4. Click "Buy Ticket"
+5. Enter email address
+6. Approve PYUSD spending (if first time)
+7. Confirm purchase transaction
+8. Wait for transaction confirmation
+9. Verify ticket stored in database
+10. Verify buyer added to Google Calendar event
+11. Verify confirmation email sent
+12. Check "My Tickets" page shows new ticket
+
+**Test**:
+- Purchase completes successfully
+- PYUSD transferred from buyer to contract
+- Platform fee calculated correctly
+- Buyer appears in Google Calendar attendee list
+- Email received with correct details
+- Ticket appears in "My Tickets"
+- Meet link is accessible to buyer
+
+### 5.3 Test Google Meet Access Control
+
+**Task**: Verify only ticket holders can join meeting.
+
+**Steps**:
+1. From buyer account, click Meet link in calendar
+2. Verify automatic admission (no waiting room)
+3. Try accessing Meet link from non-buyer account
+4. Verify access denied or requires approval
+5. Test organizer can always join
+6. Test privacy settings (attendees can't see others)
+
+**Test**:
+- Ticket holder joins without waiting
+- Non-ticket holder cannot join or must request
+- Organizer has host controls
+- Attendees list shows only yourself (privacy working)
+
+### 5.4 Test Withdrawal Flow
+
+**Task**: Verify organizers can withdraw funds.
+
+**Steps**:
+1. From organizer account, navigate to dashboard
+2. Select event with ticket sales
+3. Click "Withdraw"
+4. Confirm transaction
+5. Wait for confirmation
+6. Verify PYUSD received in organizer wallet
+7. Verify amount matches (ticket price × sold - 2.5% fee) × tickets
+8. Verify cannot withdraw again
+
+**Test**:
+- Withdrawal transaction succeeds
+- Correct PYUSD amount received
+- Second withdrawal attempt fails
+- Dashboard updates showing withdrawn status
+
+### 5.5 Test Error Scenarios
+
+**Task**: Verify error handling works correctly.
+
+**Steps**:
+1. Try purchasing sold-out event - should fail gracefully
+2. Try purchasing after event started - should fail
+3. Try purchasing with insufficient PYUSD - should show clear error
+4. Try creating event with past date - should fail validation
+5. Try withdrawing as non-organizer - should fail
+6. Test with disconnected wallet - should prompt reconnection
+7. Test with network errors - should show retry option
+
+**Test**:
+- Each error shows user-friendly message
+- No console errors or crashes
+- Retry options work correctly
+- Form validations prevent bad submissions
+
+### 5.6 Test Mobile Responsiveness
+
+**Task**: Verify app works on mobile devices.
+
+**Steps**:
+1. Open app on mobile device or browser DevTools mobile view
+2. Test all pages at various screen sizes (320px to 768px)
+3. Verify touch targets are large enough (>44px)
+4. Test wallet connection on mobile
+5. Test event creation on mobile
+6. Test ticket purchase on mobile
+7. Test navigation and modals
+
+**Test**:
+- All pages render correctly on mobile
+- No horizontal scrolling
+- Buttons are easily tappable
+- Forms are usable
+- Modals display properly
+- Wallet connection works on mobile wallet apps
+
+### 5.7 Performance Testing
+
+**Task**: Verify app performance meets standards.
+
+**Steps**:
+1. Test page load times (should be <3 seconds)
+2. Test API response times (should be <500ms)
+3. Test with slow network (throttle to 3G)
+4. Test with multiple simultaneous ticket purchases
+5. Test event list with 100+ events
+6. Check bundle sizes (should be <500KB initial load)
+7. Run Lighthouse audit
+
+**Test**:
+- Homepage loads in <3 seconds
+- API responses under 500ms
+- Works on 3G network (slower but functional)
+- Multiple purchases process correctly
+- Large lists paginate efficiently
+- Lighthouse score >80 for performance
+
+### 5.8 Security Testing
+
+**Task**: Verify security measures are in place.
+
+**Steps**:
+1. Test authentication on protected routes
+2. Try accessing other user's dashboard - should fail
+3. Try modifying other user's events - should fail
+4. Test SQL injection attempts in API
+5. Test XSS attempts in event descriptions
+6. Verify environment variables not exposed
+7. Check API rate limiting works
+8. Verify Google OAuth tokens are encrypted
+
+**Test**:
+- Unauthorized access attempts fail
+- Protected routes require authentication
+- Input validation prevents injection attacks
+- Sensitive data is encrypted
+- Rate limiting prevents abuse
+
+---
+
+## Phase 6: Email & Notifications (Day 11)
+
+### 6.1 Setup Email Templates
+
+**Task**: Create HTML email templates for all notifications.
+
+**Steps**:
+1. Create template for ticket confirmation email
+2. Create template for event reminder (24 hours before)
+3. Create template for event update notifications
+4. Create template for organizer notifications
+5. Include event details, Meet link, calendar button
+6. Make templates mobile-responsive
+7. Test templates in multiple email clients
+
+**Test**:
+- Send test emails - render correctly
+- Links are clickable
+- Buttons work on mobile
+- Templates display in Gmail, Outlook, Apple Mail
+- Images load correctly
+
+### 6.2 Implement Calendar Invite Generation
+
+**Task**: Generate .ics files for calendar imports.
+
+**Steps**:
+1. Create `utils/icsGenerator.js`
+2. Implement iCalendar format generator
+3. Include event details, date/time, Meet link
+4. Add reminder settings (24 hours, 1 hour before)
+5. Attach to confirmation emails
+6. Test with multiple calendar apps
+
+**Test**:
+- Download .ics file
+- Import to Google Calendar - event appears correctly
+- Import to Apple Calendar - event appears correctly
+- Import to Outlook - event appears correctly
+- Meet link clickable in all calendar apps
+
+### 6.3 Add Ticket Confirmation Flow
+
+**Task**: Send confirmation email after ticket purchase.
+
+**Steps**:
+1. Trigger email send after ticket stored in database
+2. Include ticket details, event info, Meet link
+3. Attach .ics calendar file
+4. Add "Add to Calendar" button
+5. Include transaction hash for verification
+6. Add event organizer contact info (if available)
+7. Send within 30 seconds of purchase
+
+**Test**:
+- Purchase ticket - email arrives within 30 seconds
+- Email contains all required information
+- Calendar file works
+- Links are correct
+- Email deliverability >98%
+
+### 6.4 Add Event Reminder Notifications
+
+**Task**: Send automated reminders before events.
+
+**Steps**:
+1. Create background job to check upcoming events
+2. Send reminder 24 hours before event
+3. Send reminder 1 hour before event
+4. Include quick links to join Meet
+5. Run job every 15 minutes
+6. Prevent duplicate reminders
+7. Only send to confirmed attendees
+
+**Test**:
+- Create test event 24 hours in future
+- Wait for job to run - reminder email sent
+- Check only once per event per attendee
+- Email received at correct time
+
+---
+
+## Phase 7: Polish & Documentation (Day 12)
+
+### 7.1 UI/UX Polish
+
+**Task**: Improve visual design and user experience.
+
+**Steps**:
+1. Add smooth transitions and animations
+2. Improve loading states (skeleton screens)
+3. Add micro-interactions (button hover states, etc.)
+4. Improve color contrast for accessibility
+5. Add focus states for keyboard navigation
+6. Improve error message clarity
+7. Add success animations for completed actions
+8. Polish mobile experience
+
+**Test**:
+- Interactions feel smooth
+- Animations don't cause lag
+- Keyboard navigation works
+- WCAG AA color contrast compliance
+- Mobile experience feels native
+
+### 7.2 Add Metadata and SEO
+
+**Task**: Optimize for search engines and social sharing.
+
+**Steps**:
+1. Add proper page titles for all pages
+2. Add meta descriptions
+3. Add Open Graph tags for social sharing
+4. Add Twitter Card metadata
+5. Create favicon and app icons
+6. Add structured data for events
+7. Create robots.txt and sitemap
+
+**Test**:
+- Share event link on Twitter - card displays correctly
+- Share on Facebook - preview looks good
+- Google search preview looks correct
+- Favicon appears in browser tab
+
+### 7.3 Write User Documentation
+
+**Task**: Create help documentation for users.
+
+**Steps**:
+1. Write "How to Create an Event" guide
+2. Write "How to Buy Tickets" guide
+3. Write "How to Connect Google Calendar" guide
+4. Write "How to Get PYUSD" guide
+5. Create FAQ section
+6. Add tooltips for complex features
+7. Create video tutorial (optional)
+
+**Test**:
+- New user can follow guides successfully
+- FAQ answers common questions
+- Guides are clear and concise
+- Screenshots are up to date
+
+### 7.4 Create README and Setup Docs
+
+**Task**: Document project setup for developers.
+
+**Steps**:
+1. Write comprehensive README.md
+2. Document environment variables needed
+3. Create setup instructions for each component
+4. Document API endpoints
+5. Document smart contract functions
+6. Add troubleshooting section
+7. Include deployment instructions
+
+**Test**:
+- New developer can set up project following README
+- All environment variables documented
+- API documentation is accurate
+- Deployment steps work
+
+### 7.5 Add Error Logging and Monitoring
+
+**Task**: Implement logging for debugging and monitoring.
+
+**Steps**:
+1. Add error logging to backend (use Winston or similar)
+2. Log all API requests with timestamps
+3. Log smart contract interactions
+4. Log email send attempts
+5. Add basic monitoring dashboard (optional)
+6. Set up error alerting for critical failures
+
+**Test**:
+- Trigger error - appears in logs
+- Check log format is readable
+- Logs include relevant context
+- Can trace request flow through logs
+
+---
+
+## Phase 8: Deployment & Testing (Day 13)
+
+### 8.1 Deploy Smart Contract to Sepolia
+
+**Task**: Final deployment of audited contract to testnet.
+
+**Steps**:
+1. Review all smart contract tests pass
+2. Run final security checks
+3. Deploy to Sepolia using deployment script
+4. Verify contract on Etherscan
+5. Test all functions on deployed contract
+6. Update frontend with new contract address
+7. Document contract address and ABI
+
+**Test**:
+- Contract deployed successfully
+- All functions work on live contract
+- Contract verified on Etherscan
+- Frontend connects to deployed contract
+
+### 8.2 Deploy Backend to Production
+
+**Task**: Deploy Node.js backend to hosting service.
+
+**Steps**:
+1. Choose hosting (Render, Railway, or Heroku)
+2. Configure production environment variables
+3. Set up MongoDB Atlas production database
+4. Deploy backend service
+5. Configure domain/subdomain (api.ticketify.xyz)
+6. Test all API endpoints on production
+7. Enable HTTPS and set up SSL certificate
+8. Configure CORS for frontend domain
+
+**Test**:
+- API accessible at production URL
+- All endpoints respond correctly
+- HTTPS enabled
+- CORS configured properly
+- Database connections work
+- Environment variables loaded
+
+### 8.3 Deploy Frontend to Vercel
+
+**Task**: Deploy Next.js frontend to production.
+
+**Steps**:
+1. Connect GitHub repository to Vercel
+2. Configure build settings
+3. Add environment variables (API URL, contract address, Privy key)
+4. Configure custom domain (ticketify.xyz)
+5. Deploy to production
+6. Test all pages work correctly
+7. Verify wallet connections work
+8. Configure caching and CDN
+
+**Test**:
+- Site accessible at production domain
+- All pages load correctly
+- Wallet connection works
+- Smart contract interactions work
+- Images and assets load
+- Performance is good (Lighthouse >80)
+
+### 8.4 Configure Production Monitoring
+
+**Task**: Set up monitoring and alerting for production.
+
+**Steps**:
+1. Set up uptime monitoring (UptimeRobot or similar)
+2. Configure error tracking (Sentry or similar)
+3. Set up log aggregation
+4. Configure alerts for downtime
+5. Set up performance monitoring
+6. Create status page (optional)
+
+**Test**:
+- Monitor detects when site goes down
+- Errors logged and reported correctly
+- Alerts sent when issues occur
+- Can view logs from all services
+
+### 8.5 Production Testing
+
+**Task**: Comprehensive testing on production environment.
+
+**Steps**:
+1. Test complete event creation flow on production
+2. Test ticket purchase with real Sepolia PYUSD
+3. Test Google Calendar integration
+4. Test email delivery
+5. Test on multiple devices and browsers
+6. Test with multiple users simultaneously
+7. Verify gas estimation is accurate
+8. Check all links and navigation
+
+**Test**:
+- All flows work on production
+- Emails delivered successfully
+- Google Calendar events created
+- No console errors
+- Performance is acceptable
+- Mobile experience is smooth
+
+---
+
+## Phase 9: Demo Preparation (Day 14)
+
+### 9.1 Create Demo Accounts
+
+**Task**: Set up accounts for demo presentation.
+
+**Steps**:
+1. Create organizer wallet with Sepolia ETH
+2. Create buyer wallet(s) with PYUSD and ETH
+3. Connect Google account to organizer
+4. Create 2-3 sample events
+5. Purchase tickets from sample events
+6. Prepare screenshots of key features
+7. Test demo flow multiple times
+
+**Test**:
+- Demo wallets have sufficient funds
+- Sample events display correctly
+- Can complete full flow in <3 minutes
+- All features accessible quickly
+
+### 9.2 Record Demo Video
+
+**Task**: Create 2-3 minute demo video for ETHGlobal submission.
+
+**Steps**:
+1. Write demo script (follow design doc demo scenario)
+2. Practice demo flow multiple times
+3. Record screen with audio narration
+4. Show: Homepage → Create Event → Purchase Ticket → Dashboard
+5. Highlight key features (automatic calendar, PYUSD payment, instant access)
+6. Keep under 3 minutes
+7. Edit video for clarity
+8. Add captions (optional but recommended)
+9. Export in high quality (1080p)
+
+**Test**:
+- Video is <3 minutes
+- Audio is clear
+- All key features demonstrated
+- Flow is easy to follow
+- Video quality is good
+
+### 9.3 Create Presentation Materials
+
+**Task**: Prepare supporting materials for ETHGlobal submission.
+
+**Steps**:
+1. Create project logo and branding
+2. Design banner image for submission
+3. Write clear project description
+4. List technologies used
+5. Highlight PYUSD integration
+6. Prepare architecture diagram
+7. Create screenshots of key features
+8. Write "Challenges faced" section
+9. Write "What we learned" section
+
+**Test**:
+- All materials look professional
+- Description is clear and compelling
+- Images are high quality
+- Technical details are accurate
+
+### 9.4 Prepare GitHub Repository
+
+**Task**: Clean up and document code repository.
+
+**Steps**:
+1. Review all code for comments and clarity
+2. Remove any test/debug code
+3. Update README with complete instructions
+4. Add LICENSE file (MIT)
+5. Add CONTRIBUTING guidelines
+6. Create .env.example files for all components
+7. Ensure .gitignore excludes sensitive files
+8. Add badges (build status, license, etc.)
+9. Create GitHub release/tag for v1.0
+
+**Test**:
+- Repository is public and accessible
+- README is comprehensive
+- No sensitive data committed
+- Code is well-organized
+- Installation instructions work
+
+### 9.5 Final Testing Checklist
+
+**Task**: Complete final testing before submission.
+
+**Steps**:
+- [ ] Smart contract deployed and verified on Sepolia
+- [ ] Backend API deployed and accessible
+- [ ] Frontend deployed with custom domain
+- [ ] Google Calendar integration working
+- [ ] Email notifications sending
+- [ ] Wallet connection working (MetaMask, WalletConnect)
+- [ ] Event creation flow complete (on-chain + calendar)
+- [ ] Ticket purchase flow complete (PYUSD payment)
+- [ ] Automatic attendee addition working
+- [ ] Organizer dashboard functional
+- [ ] Withdrawal function working
+- [ ] Mobile responsive
+- [ ] No console errors
+- [ ] Performance acceptable (<3s page loads)
+- [ ] Demo video ready
+- [ ] GitHub repository ready
+- [ ] Documentation complete
+
+**Test**:
+- Run through entire checklist
+- Fix any issues found
+- Verify all items checked
+
+---
+
+## Post-Submission (Optional Enhancements)
+
+### 10.1 Add Event Discovery Features
+
+**Task**: Improve event browsing experience.
+
+**Steps**:
+1. Add categories/tags for events
+2. Implement search functionality
+3. Add date range filtering
+4. Add price range filtering
+5. Implement sorting (date, price, popularity)
+6. Add "Featured Events" section
+
+### 10.2 Add Social Features
+
+**Task**: Enable social sharing and engagement.
+
+**Steps**:
+1. Add "Share Event" button with social media links
+2. Generate shareable event cards (OpenGraph images)
+3. Add attendee count display
+4. Add organizer profiles with ratings
+5. Add event comments/questions section
+
+### 10.3 Enhance Analytics
+
+**Task**: Provide better insights for organizers.
+
+**Steps**:
+1. Add revenue charts (daily, weekly, monthly)
+2. Add ticket sales graph over time
+3. Add geographic data for attendees
+4. Add conversion rate tracking
+5. Export attendee data as CSV
+
+### 10.4 Add Refund Functionality
+
+**Task**: Allow ticket refunds before events.
+
+**Steps**:
+1. Add refund function to smart contract
+2. Implement refund policy (e.g., before 24 hours)
+3. Remove attendee from Google Calendar on refund
+4. Send refund confirmation email
+5. Update dashboard to show refunded tickets
+
+---
+
+## Success Criteria
+
+The MVP is complete when:
+
+✅ **Core Functionality**
+- Organizers can create events with one click
+- Events automatically create Google Calendar with Meet link
+- Users can purchase tickets with PYUSD
+- Buyers automatically added to Google Calendar
+- Organizers can withdraw funds instantly
+
+✅ **Technical Requirements**
+- Smart contract deployed and verified on Sepolia
+- Backend API running in production
+- Frontend deployed with custom domain
+- All integrations working (Google, PYUSD, Privy)
+- No critical bugs
+
+✅ **User Experience**
+- Complete event creation in <2 minutes
+- Purchase ticket in <1 minute (after wallet connected)
+- Mobile responsive
+- Clear error messages
+- Smooth, intuitive flow
+
+✅ **Documentation**
+- Comprehensive README
+- API documentation
+- User guides
+- Demo video (<3 minutes)
+
+✅ **ETHGlobal Submission**
+- Project submitted on ETHGlobal platform
+- Demo video uploaded
+- GitHub repository public
+- All required fields completed
+
+---
+
+## Notes for Developers
+
+### General Principles
+- Test each step before moving to the next
+- Commit code frequently with clear messages
+- Use feature branches for development
+- Write clean, commented code
+- Follow security best practices
+- Handle errors gracefully
+- Validate all user inputs
+- Use environment variables for configuration
+
+### Common Pitfalls to Avoid
+- Don't store sensitive data in code or git
+- Don't skip smart contract testing
+- Don't forget to encrypt Google OAuth tokens
+- Don't expose API keys in frontend
+- Don't skip input validation
+- Don't assume transactions will succeed
+- Don't forget mobile responsiveness
+- Don't skip error handling
+
+### When Stuck
+1. Check documentation for the specific technology
+2. Review error messages carefully
+3. Test components in isolation
+4. Ask for help with specific error details
+5. Check similar examples in codebase
+
+### Resources
+- Google Calendar API: https://developers.google.com/calendar
+- Privy Documentation: https://docs.privy.io
+- Hardhat Documentation: https://hardhat.org
+- Shadcn/ui Components: https://ui.shadcn.com
+- PYUSD Information: https://www.paypal.com/us/digital-wallet/manage-money/crypto/pyusd
+
+---
+
+**Document Version**: 1.0  
+**Last Updated**: October 21, 2025  
+**Status**: Ready for Implementation
 
