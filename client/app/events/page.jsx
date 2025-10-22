@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import moment from 'moment';
-import { api } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import EmptyState from '@/components/EmptyState';
@@ -22,7 +22,7 @@ export default function EventsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.getEvents({ upcoming: true });
+      const response = await apiClient.getEvents({ upcoming: true });
       setEvents(response.data.events || []);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to load events');

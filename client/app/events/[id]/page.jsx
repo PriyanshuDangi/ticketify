@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import moment from 'moment';
-import { api } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
@@ -26,7 +26,7 @@ export default function EventDetailsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.getEvent(params.id);
+      const response = await apiClient.getEvent(params.id);
       setEvent(response.data.event);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to load event');
