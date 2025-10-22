@@ -328,11 +328,105 @@ contracts/
 
 ---
 
+---
+
+#### ✅ 2.2 Implement Ticketify Main Contract (Day 2)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Created `contracts/contracts/Ticketify.sol` main smart contract file
+- Imported OpenZeppelin's Ownable and ReentrancyGuard for security
+- Imported IPYUSD interface for token interactions
+- Defined complete Event struct with all required fields
+- Defined Ticket struct for purchase tracking
+- Set up all state variables and mappings
+- Configured platform fee at 250 basis points (2.5%)
+- Set PYUSD token address as immutable variable
+- Added comprehensive event definitions for logging
+- Contract is immutable (no upgrade mechanism for MVP)
+
+**Contract Structure**:
+
+**State Variables**:
+- `pyusdToken` - Immutable IPYUSD interface
+- `PLATFORM_FEE_BASIS_POINTS` - Constant 250 (2.5%)
+- `BASIS_POINTS_DIVISOR` - Constant 10000
+- `eventCounter` - Auto-incrementing event ID generator
+- `platformFeesAccumulated` - Total fees available for platform withdrawal
+
+**Event Struct** (8 fields):
+- `id` - Unique event identifier (uint256)
+- `organizer` - Event creator address
+- `price` - Ticket price in PYUSD (6 decimals)
+- `maxAttendees` - Maximum capacity
+- `eventTime` - Unix timestamp of event start
+- `isActive` - Active status flag
+- `ticketsSold` - Current tickets sold count
+- `hasWithdrawn` - Whether organizer withdrew revenue
+
+**Ticket Struct** (3 fields):
+- `eventId` - Reference to event
+- `buyer` - Purchaser address
+- `purchaseTime` - Unix timestamp of purchase
+
+**Mappings**:
+- `events` - eventId => Event struct
+- `eventTickets` - eventId => Ticket[] array
+- `hasPurchasedTicket` - eventId => buyer => bool (enforces one ticket per wallet per event)
+
+**Events Emitted**:
+- `EventCreated` - When new event is created
+- `TicketPurchased` - When ticket is bought
+- `RevenueWithdrawn` - When organizer withdraws funds
+- `PlatformFeesWithdrawn` - When platform owner withdraws fees
+
+**Security Features**:
+- Inherits OpenZeppelin Ownable for access control
+- Inherits ReentrancyGuard for reentrancy protection on withdrawals
+- Immutable PYUSD token address (set in constructor, cannot change)
+- Comprehensive input validation placeholders for functions
+
+**Key Implementation Details**:
+- **Platform Fee**: 2.5% (250 basis points / 10000)
+- **PYUSD Decimals**: 6 (contract expects 6-decimal values)
+- **Constructor**: Accepts PYUSD address, validates non-zero, initializes counter
+- **Immutability**: No proxy pattern, contract cannot be upgraded
+- **One Ticket Rule**: Mapping enforces one ticket per wallet per event
+- **Refund Placeholder**: Commented code for future refund implementation
+
+**Validation tests passed**:
+- ✅ `npx hardhat compile` - Compiled 4 Solidity files successfully
+- ✅ No compilation warnings or errors
+- ✅ OpenZeppelin contracts imported correctly (Ownable, ReentrancyGuard)
+- ✅ IPYUSD interface imported and used as immutable
+- ✅ All structs defined with proper types
+- ✅ All mappings configured correctly
+- ✅ Events defined with indexed parameters
+- ✅ Constructor validates PYUSD address
+
+**File Details**:
+```
+contracts/contracts/Ticketify.sol
+- 200+ lines of well-documented Solidity code
+- Comprehensive NatSpec documentation
+- Ready for function implementation in next steps
+```
+
+**Notes for developers**:
+- Functions (createEvent, purchaseTicket, withdrawRevenue, etc.) will be added in Steps 2.3-2.6
+- Contract uses OpenZeppelin v5.4.0 (matches installed version)
+- ReentrancyGuard will protect withdrawal functions from reentrancy attacks
+- Ownable ensures only platform owner can withdraw platform fees
+- Event counter starts at 0, increments with each new event
+- All PYUSD amounts use 6 decimals throughout contract
+
+---
+
 ## Next Steps
 
 **Phase 2: Smart Contract Development (Days 2-3)**
 - [x] 2.1 Create PYUSD Interface ✅
-- [ ] 2.2 Implement Ticketify Main Contract
+- [x] 2.2 Implement Ticketify Main Contract ✅
 - [ ] 2.3 Implement createEvent Function
 - [ ] 2.4 Implement purchaseTicket Function
 - [ ] 2.5 Implement Withdrawal Functions
@@ -348,5 +442,5 @@ contracts/
 - Testing each step before proceeding to next
 - Documenting progress for future developers
 - Phase 1 infrastructure complete ✅
-- Phase 2 started: IPYUSD interface created and tested ✅
+- Phase 2 in progress: Contract skeleton complete, ready for functions ✅
 

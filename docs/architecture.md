@@ -218,9 +218,9 @@ contracts/
 └── tsconfig.json       # TypeScript configuration
 ```
 
-**Key Contracts** (to be implemented):
-- `Ticketify.sol` - Main contract (event creation, ticket purchases, withdrawals)
-- `IPYUSD.sol` - ERC-20 interface for PYUSD token
+**Key Contracts**:
+- `Ticketify.sol` - Main contract with structs and state variables ✅ (functions in progress)
+- `IPYUSD.sol` - ERC-20 interface for PYUSD token ✅
 
 **Dependencies**:
 - `hardhat` v2.26.3 - Development environment
@@ -248,6 +248,52 @@ contracts/
 - Events: Transfer and Approval for tracking token movements
 - View functions: totalSupply, decimals, name, symbol
 - Sepolia testnet address: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
+
+**`contracts/Ticketify.sol`** - Main Ticketing Contract
+- Core immutable smart contract for event and ticket management
+- **Immutable design**: No proxy pattern, no upgrade mechanism (MVP requirement)
+- Inherits OpenZeppelin Ownable for platform owner access control
+- Inherits ReentrancyGuard for protection against reentrancy attacks on withdrawals
+- Imports IPYUSD interface for PYUSD token operations
+
+**Contract Architecture**:
+- **Platform Fee**: 2.5% (250 basis points) on all ticket sales
+- **Fee Collection**: Accumulated fees stored in contract, withdrawn by platform owner
+- **Event ID**: Auto-incrementing counter starting at 0
+- **One Ticket Rule**: Enforced via `hasPurchasedTicket` mapping (one per wallet per event)
+
+**Data Structures**:
+- **Event Struct**: 8 fields tracking event details (id, organizer, price, capacity, time, status, sales, withdrawal status)
+- **Ticket Struct**: 3 fields tracking purchase (eventId, buyer, timestamp)
+- **Mappings**:
+  - `events`: eventId → Event (main event storage)
+  - `eventTickets`: eventId → Ticket[] (all tickets for an event)
+  - `hasPurchasedTicket`: eventId → buyer → bool (prevents duplicate purchases)
+
+**Security Features**:
+- Immutable PYUSD token address (set once in constructor)
+- ReentrancyGuard on all withdrawal functions (prevents reentrancy attacks)
+- Ownable pattern for platform fee withdrawal (only owner can access)
+- Input validation on constructor (non-zero PYUSD address)
+- Comprehensive event logging for all state changes
+
+**Event Emissions** (for backend listening):
+- `EventCreated`: Logged when organizer creates new event
+- `TicketPurchased`: Logged when buyer purchases ticket
+- `RevenueWithdrawn`: Logged when organizer withdraws funds
+- `PlatformFeesWithdrawn`: Logged when platform owner withdraws fees
+
+**Business Logic** (to be implemented in functions):
+- Organizers can withdraw revenue anytime (no time restrictions)
+- One wallet can only buy one ticket per event (strictly enforced)
+- Platform automatically collects 2.5% fee on each ticket sale
+- Refund functionality placeholder included for future implementation
+
+**Integration Points**:
+- Backend listens to emitted events to sync with MongoDB
+- Frontend calls contract functions via ethers.js
+- All PYUSD amounts use 6 decimals throughout
+- Constructor requires PYUSD Sepolia address: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
 
 ---
 
@@ -315,12 +361,13 @@ User → Frontend (client/) → Backend API (server/) → MongoDB
 - `package.json` - Dependencies including OpenZeppelin contracts v5.4.0
 - `.env.example` - Template for environment variables (RPC URLs, private keys, PYUSD address)
 - `contracts/` - Solidity source files
-  - `Lock.sol` - Sample contract from Hardhat init (to be replaced with Ticketify.sol)
+  - `Lock.sol` - Sample contract from Hardhat init (to be removed)
+  - `Ticketify.sol` - Main ticketing contract (immutable, with structs and state variables)
   - `interfaces/` - Interface definitions
     - `IPYUSD.sol` - ERC-20 interface for PYUSD token (6 decimals)
-- `scripts/` - Deployment scripts
+- `scripts/` - Deployment scripts (to be created)
 - `test/` - Contract test suites (TypeScript with Viem)
-  - `Lock.ts` - Sample test file
+  - `Lock.ts` - Sample test file (to be replaced with Ticketify.test.ts)
 - `ignition/modules/` - Hardhat Ignition deployment modules
 
 **Server Directory** (Backend API):
@@ -445,8 +492,9 @@ See [database-spec.md](./database-spec.md) for complete schema definitions.
 
 ---
 
-**Status**: Phase 2 In Progress - Smart Contract Development Started  
+**Status**: Phase 2 In Progress - Smart Contract Development  
 - Phase 1 Complete: All infrastructure ready (Steps 1.1-1.5) ✅  
 - Phase 2.1 Complete: IPYUSD interface created and tested ✅  
-**Next**: Step 2.2 - Implement Ticketify Main Contract
+- Phase 2.2 Complete: Ticketify main contract skeleton implemented ✅  
+**Next**: Step 2.3 - Implement createEvent Function
 
