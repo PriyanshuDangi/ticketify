@@ -492,16 +492,40 @@ User → Frontend (client/) → Backend API (server/) → MongoDB
 - `ignition/modules/` - Hardhat Ignition deployment modules
 
 **Server Directory** (Backend API):
-- `server.js` - Main entry point, Express app configuration, health endpoint
-- `package.json` - Dependencies (express, mongoose, jwt, multer, ethers, googleapis, sendgrid)
+- `server.js` - Express app with routes, error handlers, blockchain listener startup
+- `package.json` - All dependencies (express, mongoose, jwt, multer, ethers, googleapis, sendgrid, ics)
 - `env.template` - Environment variables template (copy to .env)
 - `README.md` - Backend setup and documentation
-- `utils/db.js` - MongoDB connection with Mongoose, graceful shutdown
-- `utils/multerConfig.js` - Image upload config (8MB limit, JPEG/PNG/WebP)
-- `routes/` - API route definitions (to be populated)
-- `controllers/` - Request handlers (to be populated)
-- `models/` - Mongoose schemas (to be populated)
-- `middleware/` - Auth and validation (to be populated)
+
+**Models** (`models/`):
+- `User.js` - User schema with wallet auth and Google OAuth tokens (select: false for security)
+- `Event.js` - Event schema with calendar integration, indexes, helper methods
+- `Ticket.js` - Ticket schema with three-state flow, compound unique index
+
+**Controllers** (`controllers/`):
+- `userController.js` - Auth (register, login), profile management, Google OAuth flow
+- `eventController.js` - Event CRUD, pagination, filtering, business rule enforcement
+- `ticketController.js` - Purchase flow, confirmation, attendee lists, email integration
+
+**Routes** (`routes/`):
+- `users.js` - Auth endpoints (/api/auth/*), user profile (/api/users/me), Google connection
+- `events.js` - Event management (/api/events), my-events, CRUD operations
+- `tickets.js` - Ticket purchase/confirm (/api/tickets), my-tickets, event attendees
+
+**Middleware** (`middleware/`):
+- `auth.js` - JWT generation, wallet signature verification, authenticate/optionalAuth middleware
+- `errorHandler.js` - Global error handler, 404 handler, standardized error responses
+- `validation.js` - Input validators (events, wallet addresses, emails, tx hashes)
+
+**Utils** (`utils/`):
+- `db.js` - MongoDB connection with Mongoose, graceful shutdown, event listeners
+- `multerConfig.js` - Image upload config (8MB limit, JPEG/PNG/WebP, base64 conversion)
+- `googleAuth.js` - OAuth2 flow, token exchange, auto-refresh, authenticated client
+- `googleCalendar.js` - Calendar API integration, Meet links, attendee management
+- `email.js` - SendGrid integration, HTML templates, calendar invites (.ics generation)
+- `blockchainListener.js` - Event listening (EventCreated, TicketPurchased, withdrawals)
+
+**Directories**:
 - `uploads/` - Image storage directory
 - `logs/` - Application logs directory
 
@@ -675,15 +699,93 @@ All environment files should be updated with deployed contract address:
 
 ---
 
-**Status**: Phase 2 Complete ✅ - Smart Contract Development  
+---
+
+## Backend API Architecture
+
+### Request Flow
+
+**Authentication Flow**:
+1. User signs message with wallet → Frontend sends signature to `/api/auth/login`
+2. Backend verifies signature using ethers.js → Generates JWT token (7-day expiry)
+3. Frontend stores JWT in localStorage → Includes in `Authorization: Bearer <token>` header
+4. Middleware verifies JWT and attaches user to `req.user` for all protected routes
+
+**Event Creation Flow**:
+1. POST `/api/events` (authenticated) → Validates user has Google Calendar connected
+2. Creates Google Calendar event with Meet link → Stores in MongoDB with calendar IDs
+3. Returns event with `googleMeetLink` → Frontend displays to organizer
+
+**Ticket Purchase Flow**:
+1. POST `/api/tickets/purchase` → Creates ticket with status='created'
+2. Frontend approves PYUSD and calls smart contract → Gets transaction hash
+3. POST `/api/tickets/confirm` with txHash → Updates status='blockchain_added'
+4. Adds buyer to Google Calendar → Updates status='calendar_added'
+5. Sends confirmation email with .ics attachment → Returns success
+
+**Blockchain Sync**:
+- Listener monitors contract events → Updates database in real-time
+- `TicketPurchased` event → Confirms ticket in database
+- Automatic reconnection on provider errors
+
+### API Response Format
+
+**Success**:
+```javascript
+{
+  success: true,
+  data: { /* resource data */ },
+  message: "Operation successful"
+}
+```
+
+**Error**:
+```javascript
+{
+  success: false,
+  error: {
+    code: "ERROR_CODE",
+    message: "Human-readable message",
+    details: { /* optional */ }
+  }
+}
+```
+
+### Key Business Logic
+
+**Event Editing Restrictions** (`eventController.js`):
+- Before tickets sold: All fields editable
+- After tickets sold: Only title, description, image editable
+- Price, date, capacity locked after first ticket sale
+
+**Ticket Purchase Validation** (`ticketController.js`):
+- Checks: event active, not started, has capacity, user hasn't purchased
+- Three-state flow prevents race conditions
+- Email only sent after successful calendar addition
+
+**Google Calendar Privacy** (`googleCalendar.js`):
+- `guestsCanInviteOthers: false` - Prevents ticket sharing
+- `guestsCanSeeOtherGuests: false` - Privacy for attendees
+- `guestsCanModify: false` - Only organizer controls event
+
+**Token Auto-Refresh** (`googleAuth.js`):
+- Checks expiry before every calendar operation
+- Refreshes if expiring within 5 minutes
+- Updates database with new tokens
+
+---
+
+**Status**: Phase 3 Complete ✅ - Backend API Development  
 - Phase 1 Complete: All infrastructure ready (Steps 1.1-1.5) ✅  
-- Phase 2.1 Complete: IPYUSD interface created ✅  
-- Phase 2.2 Complete: Ticketify main contract implemented ✅  
-- Phase 2.3 Complete: createEvent function implemented ✅  
-- Phase 2.4 Complete: purchaseTicket function implemented ✅  
-- Phase 2.5 Complete: Withdrawal functions implemented ✅  
-- Phase 2.6 Complete: View functions implemented (7 functions) ✅  
-- Phase 2.7 Complete: Comprehensive tests written (62 tests passing) ✅  
-- Phase 2.8 Complete: Deployed to Sepolia and verified on Etherscan ✅  
-**Next**: Phase 3 - Backend API Development
+- Phase 2 Complete: Smart contracts deployed to Sepolia ✅  
+- Phase 3.1 Complete: Database Models (User, Event, Ticket) ✅
+- Phase 3.2 Complete: Authentication Middleware (JWT, wallet signatures) ✅
+- Phase 3.3 Complete: Google OAuth Integration (auto-refresh) ✅
+- Phase 3.4 Complete: Google Calendar Functions (Meet links, attendees) ✅
+- Phase 3.5 Complete: Events API Routes (CRUD with restrictions) ✅
+- Phase 3.6 Complete: Tickets API Routes (three-state flow) ✅
+- Phase 3.7 Complete: Users API Routes (auth, profile, Google) ✅
+- Phase 3.8 Complete: Email Notifications (SendGrid, templates) ✅
+- Phase 3.9 Complete: Blockchain Event Listening (ethers.js) ✅
+**Next**: Phase 4 - Frontend Development
 

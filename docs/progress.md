@@ -1169,16 +1169,311 @@ The deployed contract is ready for:
 - [x] 2.7 Write Comprehensive Tests ✅
 - [x] 2.8 Deploy to Sepolia Testnet ✅
 
-**Phase 3: Backend API Development (Days 4-5)** - Ready to Start
-- [ ] 3.1 Create Database Models
-- [ ] 3.2 Setup Authentication Middleware
-- [ ] 3.3 Implement Google OAuth Integration
-- [ ] 3.4 Implement Google Calendar Functions
-- [ ] 3.5 Create Events API Routes
-- [ ] 3.6 Create Tickets API Routes
-- [ ] 3.7 Create Users API Routes
-- [ ] 3.8 Implement Email Notifications
-- [ ] 3.9 Add Blockchain Event Listening
+**Phase 3: Backend API Development (Days 4-5)** ✅ COMPLETE
+- [x] 3.1 Create Database Models ✅
+- [x] 3.2 Setup Authentication Middleware ✅
+- [x] 3.3 Implement Google OAuth Integration ✅
+- [x] 3.4 Implement Google Calendar Functions ✅
+- [x] 3.5 Create Events API Routes ✅
+- [x] 3.6 Create Tickets API Routes ✅
+- [x] 3.7 Create Users API Routes ✅
+- [x] 3.8 Implement Email Notifications ✅
+- [x] 3.9 Add Blockchain Event Listening ✅
+
+---
+
+## Phase 3: Backend API Development
+
+#### ✅ 3.1 Create Database Models (Day 4)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Created User model with wallet authentication and Google Calendar token storage
+- Created Event model with all event details, Google Calendar integration fields
+- Created Ticket model with three-state flow (created → blockchain_added → calendar_added)
+- Added all indexes for query optimization
+- Implemented validation rules and constraints
+- Added virtual fields and helper methods
+
+**Files created**:
+- `server/models/User.js` - User schema with Google OAuth tokens
+- `server/models/Event.js` - Event schema with calendar integration
+- `server/models/Ticket.js` - Ticket schema with compound unique index
+
+**Key features**:
+- One-to-one wallet-to-account mapping enforced
+- Compound unique index on (event + buyerWalletAddress) for one ticket per wallet per event
+- Helper methods: `hasValidGoogleToken()`, `isUpcoming()`, `canEditPrice()`
+- All timestamps stored in UTC
+- Base64 image storage in Event model
+
+---
+
+#### ✅ 3.2 Setup Authentication Middleware (Day 4)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Implemented JWT token generation and verification (7-day expiry, no refresh)
+- Created wallet signature verification using ethers.js
+- Built Bearer token authentication middleware
+- Added optional authentication middleware for public endpoints
+- Created error handling middleware with standardized error responses
+- Implemented validation middleware for common validations
+
+**Files created**:
+- `server/middleware/auth.js` - JWT and wallet signature verification
+- `server/middleware/errorHandler.js` - Global error handler with error types
+- `server/middleware/validation.js` - Input validation helpers
+
+**Key features**:
+- Token expiry: 7 days (no refresh token, user must reconnect)
+- Signature verification prevents unauthorized access
+- Automatic error formatting for consistency
+- Validation for events, wallet addresses, emails, transaction hashes
+
+---
+
+#### ✅ 3.3 Implement Google OAuth Integration (Day 4)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Created OAuth2 client configuration
+- Implemented authorization URL generation
+- Built token exchange functionality
+- Added automatic token refresh when expired
+- Created authenticated client generator
+
+**Files created**:
+- `server/utils/googleAuth.js` - Complete OAuth flow implementation
+
+**Key features**:
+- Automatic token refresh before expiration
+- Refresh token stored securely in database
+- Token expiry tracking and validation
+- Scope: `https://www.googleapis.com/auth/calendar`
+
+---
+
+#### ✅ 3.4 Implement Google Calendar Functions (Day 4)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Created calendar event creation with Google Meet links
+- Implemented attendee management (add/remove)
+- Built event update and deletion functions
+- Added privacy settings (guests can't see other guests)
+- Implemented retry logic with error handling
+
+**Files created**:
+- `server/utils/googleCalendar.js` - Calendar API integration
+
+**Key functions**:
+- `createCalendarEvent()` - Creates event with Meet link
+- `addAttendee()` - Adds buyer to calendar event
+- `removeAttendee()` - Removes attendee from event
+- `updateCalendarEvent()` - Syncs event changes
+- `deleteCalendarEvent()` - Removes calendar event
+
+**Privacy features**:
+- Guests cannot invite others
+- Guests cannot see other attendees
+- Guests cannot modify event
+- Only organizer has full control
+
+---
+
+#### ✅ 3.5 Create Events API Routes (Day 4)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Created comprehensive event controller with all CRUD operations
+- Implemented pagination and filtering for event listings
+- Built event creation with Google Calendar integration
+- Added event update restrictions (price locked after tickets sold)
+- Implemented event deletion prevention if tickets sold
+- Created organizer dashboard endpoint
+
+**Files created**:
+- `server/controllers/eventController.js` - Event business logic
+- `server/routes/events.js` - Event API routes
+
+**API endpoints**:
+- `POST /api/events` - Create event (auth required, creates calendar event)
+- `GET /api/events` - List events (pagination, filters, search)
+- `GET /api/events/:id` - Get single event (Meet link access control)
+- `PUT /api/events/:id` - Update event (restrictions apply)
+- `DELETE /api/events/:id` - Delete event (only if no tickets sold)
+- `GET /api/events/my-events` - Organizer's events with stats
+
+**Business rules enforced**:
+- After tickets sold: only title, description, image editable
+- Cannot delete events with sold tickets
+- Meet link only shown to organizer and ticket holders
+- Google Calendar automatically synced
+
+---
+
+#### ✅ 3.6 Create Tickets API Routes (Day 4)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Implemented three-state ticket purchase flow
+- Created ticket purchase initiation endpoint
+- Built blockchain confirmation with calendar integration
+- Added user tickets listing with event population
+- Created organizer attendee management endpoint
+
+**Files created**:
+- `server/controllers/ticketController.js` - Ticket business logic
+- `server/routes/tickets.js` - Ticket API routes
+
+**API endpoints**:
+- `POST /api/tickets/purchase` - Initiate purchase (creates ticket with 'created' status)
+- `POST /api/tickets/confirm` - Confirm blockchain tx (updates to 'blockchain_added', then 'calendar_added')
+- `GET /api/tickets/my-tickets` - User's tickets with pagination
+- `GET /api/tickets/event/:eventId` - Event attendees (organizer only)
+
+**Three-state flow**:
+1. `created` - Ticket created in DB, awaiting blockchain
+2. `blockchain_added` - Blockchain payment confirmed
+3. `calendar_added` - Added to Google Calendar (final state)
+
+**Validations**:
+- Event capacity check
+- One ticket per wallet per event enforcement
+- Event not started validation
+- Transaction hash uniqueness
+
+---
+
+#### ✅ 3.7 Create Users API Routes (Day 4)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Created user registration and login with wallet signatures
+- Implemented profile management endpoints
+- Built Google OAuth connection flow
+- Added Google Calendar disconnect functionality
+- Implemented auto-registration on first login
+
+**Files created**:
+- `server/controllers/userController.js` - User management logic
+- `server/routes/users.js` - User and auth API routes
+
+**API endpoints**:
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login with wallet signature (auto-creates user)
+- `GET /api/users/me` - Get current user profile
+- `PUT /api/users/me` - Update profile (email, name)
+- `GET /api/users/connect-google` - Get OAuth URL
+- `POST /api/users/google-callback` - Handle OAuth callback
+- `POST /api/users/disconnect-google` - Disconnect Google Calendar
+
+**Security features**:
+- Wallet signature verification using ethers.js
+- Message timestamp validation (5-minute window)
+- JWT token generation with 7-day expiry
+- Secure token storage (access_token and refresh_token not exposed)
+
+---
+
+#### ✅ 3.8 Implement Email Notifications (Day 4-5)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Integrated SendGrid for email delivery
+- Created HTML email templates with responsive design
+- Generated .ics calendar invite files
+- Implemented ticket confirmation emails
+- Built event update notification system
+- Created event reminder functionality (24 hours before)
+
+**Files created**:
+- `server/utils/email.js` - Email service with templates
+
+**Email types**:
+- **Ticket Confirmation**: Sent after calendar_added status
+  - Includes event details, Meet link, transaction hash
+  - Attached .ics calendar file
+  - Beautiful HTML template
+- **Event Updates**: Sent to all attendees when organizer updates event
+- **Event Reminders**: Automated 24-hour before event reminder
+
+**Features**:
+- Responsive email templates
+- Calendar invite generation using ics library
+- Moment.js for date formatting
+- Plain text fallback for all emails
+- Transaction hash included for verification
+
+---
+
+#### ✅ 3.9 Add Blockchain Event Listening (Day 5)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Created blockchain event listener using ethers.js
+- Implemented listeners for all contract events
+- Added automatic reconnection logic
+- Built event handlers to sync with database
+- Integrated listener startup with server
+
+**Files created**:
+- `server/utils/blockchainListener.js` - Event listener implementation
+
+**Events monitored**:
+- `EventCreated` - Verifies events exist in database
+- `TicketPurchased` - Updates ticket status to blockchain_added
+- `RevenueWithdrawn` - Logs organizer withdrawals
+- `PlatformFeesWithdrawn` - Tracks platform revenue
+
+**Features**:
+- Auto-reconnection on provider errors
+- Historical event querying capability
+- Graceful error handling
+- Integrated with server startup
+- Current block tracking
+
+**Integration**:
+- Updated `server.js` to start listener after database connection
+- Listener starts 2 seconds after server initialization
+- Graceful shutdown handlers added
+
+---
+
+## Phase 3 Summary
+
+**Phase 3: Backend API Development - COMPLETE** ✅
+
+All backend infrastructure is now in place:
+- ✅ 3.1 Database Models (User, Event, Ticket)
+- ✅ 3.2 Authentication Middleware (JWT, wallet signatures)
+- ✅ 3.3 Google OAuth Integration (token refresh)
+- ✅ 3.4 Google Calendar Functions (Meet link, attendees)
+- ✅ 3.5 Events API Routes (CRUD with restrictions)
+- ✅ 3.6 Tickets API Routes (three-state flow)
+- ✅ 3.7 Users API Routes (auth, profile, Google)
+- ✅ 3.8 Email Notifications (SendGrid, templates)
+- ✅ 3.9 Blockchain Event Listening (ethers.js)
+
+**Server Structure**:
+```
+server/
+├── models/              # Mongoose schemas (User, Event, Ticket)
+├── controllers/         # Business logic (event, ticket, user)
+├── routes/              # API routes (events, tickets, users)
+├── middleware/          # Auth, validation, error handling
+├── utils/               # Helper functions
+│   ├── db.js           # MongoDB connection
+│   ├── multerConfig.js # Image uploads
+│   ├── googleAuth.js   # OAuth flow
+│   ├── googleCalendar.js # Calendar API
+│   ├── email.js        # SendGrid integration
+│   └── blockchainListener.js # Event monitoring
+└── server.js           # Express app with all routes integrated
+```
+
+**Ready for Phase 4**: Frontend Development
 
 ---
 
@@ -1188,7 +1483,7 @@ The deployed contract is ready for:
 - Testing each step before proceeding to next
 - Documenting progress for future developers
 - Phase 1 infrastructure complete ✅
-- **Phase 2 complete ✅** - All smart contracts implemented, tested, and deployed
-- Contract deployed to Sepolia and verified on Etherscan
-- Ready to begin Phase 3: Backend API Development
+- Phase 2 complete ✅ - Smart contracts deployed to Sepolia
+- **Phase 3 complete ✅** - Backend API fully implemented
+- Ready to begin Phase 4: Frontend Development
 
