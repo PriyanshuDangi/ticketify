@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import moment from 'moment';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { apiClient } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -10,16 +11,18 @@ import ErrorMessage from '@/components/ErrorMessage';
 import EmptyState from '@/components/EmptyState';
 
 export default function DashboardPage() {
+  const { ready, authenticated } = usePrivy();
+  const { wallets } = useWallets();
   const { isAuthenticated, user } = useAuthStore();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (authenticated) {
       fetchMyEvents();
     }
-  }, [isAuthenticated]);
+  }, [authenticated]);
 
   const fetchMyEvents = async () => {
     try {
@@ -34,7 +37,15 @@ export default function DashboardPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!ready) {
+    return (
+      <div className="container py-12">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  if (!authenticated) {
     return (
       <div className="container py-12">
         <EmptyState

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import moment from 'moment';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useAuthStore } from '@/store/authStore';
 import { apiClient } from '@/lib/api';
 import { parsePYUSD } from '@/lib/contracts';
@@ -11,6 +12,8 @@ import ErrorMessage from '@/components/ErrorMessage';
 
 export default function CreateEventPage() {
   const router = useRouter();
+  const { ready, authenticated } = usePrivy();
+  const { wallets } = useWallets();
   const { user, token } = useAuthStore();
   
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Date/Time, 3: Pricing, 4: Review
@@ -29,22 +32,24 @@ export default function CreateEventPage() {
     maxAttendees: 50,
   });
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated with wallet
   useEffect(() => {
-    if (!token) {
-      router.push('/');
+    if (ready && !authenticated) {
+      setError('Please connect your wallet to create events');
+      setTimeout(() => router.push('/'), 2000);
     }
-  }, [token, router]);
+  }, [ready, authenticated, router]);
 
-  // Check Google Calendar connection
+  // Check Google Calendar connection (optional warning, not blocking)
   useEffect(() => {
     const checkGoogleConnection = async () => {
-      if (token && user && !user.isGoogleCalendarAdded) {
-        setError('Please connect Google Calendar before creating events');
+      if (authenticated && user && !user.isGoogleCalendarAdded) {
+        // Show warning but don't block - Google Calendar integration is optional for now
+        console.warn('Google Calendar not connected');
       }
     };
     checkGoogleConnection();
-  }, [token, user]);
+  }, [authenticated, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -197,10 +202,23 @@ export default function CreateEventPage() {
     }
   };
 
-  if (!token) {
+  // Show loading while Privy initializes
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  // Show message if not authenticated
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Please connect your wallet to create events</p>
+          <LoadingSpinner size="lg" text="Redirecting..." />
+        </div>
       </div>
     );
   }
@@ -334,9 +352,9 @@ export default function CreateEventPage() {
                   min={moment().add(1, 'hour').format('YYYY-MM-DDTHH:mm')}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                {/* <p className="text-xs text-gray-500 mt-1">
                   Your local timezone: {moment.tz.guess()}
-                </p>
+                </p> */}
                 {formData.dateTime && (
                   <p className="text-sm text-blue-600 mt-2">
                     Selected: {moment(formData.dateTime).format('LLLL')}
@@ -516,7 +534,7 @@ export default function CreateEventPage() {
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={loading || !user?.isGoogleCalendarAdded}
+              disabled={loading}
               className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 flex items-center gap-2"
             >
               {loading ? (
@@ -531,10 +549,10 @@ export default function CreateEventPage() {
           )}
         </div>
 
-        {!user?.isGoogleCalendarAdded && step === 4 && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800 text-sm">
-              Please connect Google Calendar before creating events. Go to your profile to connect.
+        {wallets.length > 0 && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-800 text-sm">
+              📝 <strong>Connected Wallet:</strong> {wallets[0].address}
             </p>
           </div>
         )}
