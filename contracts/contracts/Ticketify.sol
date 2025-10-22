@@ -210,6 +210,74 @@ contract Ticketify is Ownable, ReentrancyGuard {
         return eventId;
     }
 
+    /**
+     * @dev Purchase a ticket for an event with PYUSD
+     * @param eventId The ID of the event to purchase ticket for
+     * 
+     * Requirements:
+     * - Event must exist and be active
+     * - Event must not have started
+     * - Event must have available capacity
+     * - Buyer must not have already purchased a ticket for this event (one per wallet)
+     * - Buyer must have approved sufficient PYUSD allowance
+     * 
+     * Emits TicketPurchased event
+     * 
+     * @notice Buyer must approve PYUSD spending before calling this function
+     * @notice One wallet can only purchase one ticket per event
+     */
+    function purchaseTicket(uint256 eventId) external nonReentrant {
+        Event storage eventData = events[eventId];
+
+        // Validate event exists and is active
+        require(eventData.organizer != address(0), "Event does not exist");
+        require(eventData.isActive, "Event is not active");
+
+        // Validate event hasn't started
+        require(block.timestamp < eventData.eventTime, "Event has already started");
+
+        // Validate capacity available
+        require(eventData.ticketsSold < eventData.maxAttendees, "Event is sold out");
+
+        // Validate buyer hasn't already purchased (one ticket per wallet per event)
+        require(!hasPurchasedTicket[eventId][msg.sender], "Already purchased ticket for this event");
+
+        // Calculate platform fee (2.5% of ticket price)
+        uint256 platformFee = (eventData.price * PLATFORM_FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
+
+        // Transfer PYUSD from buyer to contract
+        // Buyer must have approved this contract to spend PYUSD
+        require(
+            pyusdToken.transferFrom(msg.sender, address(this), eventData.price),
+            "PYUSD transfer failed"
+        );
+
+        // Accumulate platform fee
+        platformFeesAccumulated += platformFee;
+
+        // Create and store ticket
+        Ticket memory newTicket = Ticket({
+            eventId: eventId,
+            buyer: msg.sender,
+            purchaseTime: block.timestamp
+        });
+        eventTickets[eventId].push(newTicket);
+
+        // Increment ticket count
+        eventData.ticketsSold++;
+
+        // Mark that buyer has purchased ticket for this event
+        hasPurchasedTicket[eventId][msg.sender] = true;
+
+        // Emit event for off-chain tracking
+        emit TicketPurchased(
+            eventId,
+            msg.sender,
+            eventData.price,
+            block.timestamp
+        );
+    }
+
     // Future enhancement: Refund functionality
     // function refundTicket(uint256 eventId) external nonReentrant {
     //     // Refund logic to be implemented in future version

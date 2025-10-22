@@ -219,7 +219,7 @@ contracts/
 ```
 
 **Key Contracts**:
-- `Ticketify.sol` - Main contract (createEvent ✅, other functions in progress)
+- `Ticketify.sol` - Main contract (createEvent ✅, purchaseTicket ✅, withdrawals in progress)
 - `IPYUSD.sol` - ERC-20 interface for PYUSD token ✅
 
 **Dependencies**:
@@ -301,9 +301,32 @@ contracts/
 - Returns eventId for immediate frontend use
 - Gas optimized: external visibility, no redundant storage
 
+**`purchaseTicket(eventId)`** - Ticket Purchase with PYUSD ✅
+- Single parameter: eventId to purchase for
+- Validates 6 requirements: exists, active, not started, has capacity, not already purchased, transfer succeeds
+- **Enforces one ticket per wallet per event** (core business rule)
+- Calculates platform fee: 2.5% (250 basis points)
+- Transfers PYUSD from buyer to contract via `transferFrom`
+- Accumulates platform fee in `platformFeesAccumulated`
+- Creates Ticket struct and stores in `eventTickets[eventId]` array
+- Increments `ticketsSold` counter
+- Marks purchase in `hasPurchasedTicket[eventId][buyer]` mapping
+- Emits `TicketPurchased` for backend sync
+- Protected by `nonReentrant` modifier against reentrancy attacks
+- Uses `Event storage` reference for gas efficiency
+
+**Platform Fee Flow**:
+- 2.5% of each ticket sale goes to platform
+- Accumulated in contract as `platformFeesAccumulated`
+- Example: 10.50 PYUSD ticket → 0.2625 PYUSD platform fee
+- Organizer receives: ticket price - platform fee
+- Platform owner withdraws accumulated fees separately
+
 **Integration Points**:
-- Backend listens to `EventCreated` event → creates MongoDB record + Google Calendar event
-- Frontend calls `createEvent()` → receives eventId → displays success
+- Backend listens to `EventCreated` event → creates MongoDB + Google Calendar event
+- Backend listens to `TicketPurchased` event → updates ticket status + adds to calendar
+- Frontend: User approves PYUSD → calls `purchaseTicket()` → receives confirmation
+- Frontend must call PYUSD `approve()` before `purchaseTicket()`
 - All PYUSD amounts use 6 decimals (UI converts 2 decimals → 6 decimals)
 - Constructor requires PYUSD Sepolia address: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
 
@@ -509,5 +532,6 @@ See [database-spec.md](./database-spec.md) for complete schema definitions.
 - Phase 2.1 Complete: IPYUSD interface created and tested ✅  
 - Phase 2.2 Complete: Ticketify main contract skeleton implemented ✅  
 - Phase 2.3 Complete: createEvent function implemented ✅  
-**Next**: Step 2.4 - Implement purchaseTicket Function
+- Phase 2.4 Complete: purchaseTicket function implemented ✅  
+**Next**: Step 2.5 - Implement Withdrawal Functions
 
