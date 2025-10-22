@@ -271,10 +271,67 @@ All foundational infrastructure is now in place:
 
 ---
 
+---
+
+## Phase 2: Smart Contract Development
+
+#### ✅ 2.1 Create PYUSD Interface (Day 2)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Created `contracts/contracts/interfaces/IPYUSD.sol` interface file
+- Defined standard ERC-20 interface methods with PYUSD-specific documentation
+- Added comprehensive NatSpec comments explaining 6-decimal precision
+- Included all required ERC-20 functions: transfer, transferFrom, approve, balanceOf, allowance
+- Added view functions: totalSupply, decimals, name, symbol
+- Defined Transfer and Approval events per ERC-20 standard
+
+**Interface Methods**:
+- `totalSupply()` - Returns total token supply
+- `balanceOf(address)` - Returns token balance of an account
+- `transfer(address, uint256)` - Transfers tokens from caller to recipient
+- `allowance(address, address)` - Returns remaining allowance for spender
+- `approve(address, uint256)` - Sets allowance for spender
+- `transferFrom(address, address, uint256)` - Transfers tokens using allowance mechanism
+- `decimals()` - Returns 6 (PYUSD uses 6 decimals, not 18)
+- `name()` - Returns token name
+- `symbol()` - Returns token symbol
+
+**Key Implementation Details**:
+- **PYUSD Decimals**: 6 (not the standard 18 used by most ERC-20 tokens)
+- **Conversion Example**: 10.50 PYUSD = 10,500,000 in contract (6 decimals)
+- **Sepolia Address**: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
+- **Solidity Version**: ^0.8.20
+- **License**: MIT
+
+**Validation tests passed**:
+- ✅ `npx hardhat compile` - Compiled 1 Solidity file successfully
+- ✅ No syntax errors in interface definition
+- ✅ All standard ERC-20 methods included
+- ✅ Events properly defined with indexed parameters
+- ✅ NatSpec documentation complete for all functions
+
+**File Location**:
+```
+contracts/
+└── contracts/
+    └── interfaces/
+        └── IPYUSD.sol  # 98 lines, fully documented
+```
+
+**Notes for developers**:
+- Always remember PYUSD uses 6 decimals (not 18)
+- When converting from UI (2 decimals) to contract: multiply by 10^6
+- Example: User enters "10.50" → Contract receives 10500000
+- Interface follows EIP-20 standard exactly
+- Can be imported in other contracts: `import "./interfaces/IPYUSD.sol";`
+
+---
+
 ## Next Steps
 
 **Phase 2: Smart Contract Development (Days 2-3)**
-- [ ] 2.1 Create PYUSD Interface
+- [x] 2.1 Create PYUSD Interface ✅
 - [ ] 2.2 Implement Ticketify Main Contract
 - [ ] 2.3 Implement createEvent Function
 - [ ] 2.4 Implement purchaseTicket Function
@@ -290,5 +347,6 @@ All foundational infrastructure is now in place:
 - Following implementation-plan.md step-by-step
 - Testing each step before proceeding to next
 - Documenting progress for future developers
-- Phase 1 infrastructure complete, moving to smart contract development
+- Phase 1 infrastructure complete ✅
+- Phase 2 started: IPYUSD interface created and tested ✅
 

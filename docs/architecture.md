@@ -235,6 +235,20 @@ contracts/
 - Viem library used instead of Ethers.js (Hardhat toolbox default)
 - Solidity compiler optimization enabled for gas efficiency
 
+**Smart Contract Files Explained**:
+
+**`contracts/interfaces/IPYUSD.sol`** - PYUSD Token Interface
+- ERC-20 interface for interacting with PYUSD stablecoin
+- **Critical: PYUSD uses 6 decimals** (not the standard 18)
+- Defines standard ERC-20 functions: transfer, transferFrom, approve, balanceOf, allowance
+- Used by Ticketify contract to handle PYUSD payments
+- Includes comprehensive NatSpec documentation for 6-decimal handling
+- Example conversion: 10.50 PYUSD (display) = 10,500,000 (contract value)
+- Follows EIP-20 standard exactly
+- Events: Transfer and Approval for tracking token movements
+- View functions: totalSupply, decimals, name, symbol
+- Sepolia testnet address: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
+
 ---
 
 ## Data Flow
@@ -302,6 +316,8 @@ User → Frontend (client/) → Backend API (server/) → MongoDB
 - `.env.example` - Template for environment variables (RPC URLs, private keys, PYUSD address)
 - `contracts/` - Solidity source files
   - `Lock.sol` - Sample contract from Hardhat init (to be replaced with Ticketify.sol)
+  - `interfaces/` - Interface definitions
+    - `IPYUSD.sol` - ERC-20 interface for PYUSD token (6 decimals)
 - `scripts/` - Deployment scripts
 - `test/` - Contract test suites (TypeScript with Viem)
   - `Lock.ts` - Sample test file
@@ -429,6 +445,8 @@ See [database-spec.md](./database-spec.md) for complete schema definitions.
 
 ---
 
-**Status**: Phase 1 Complete - All infrastructure ready (Steps 1.1-1.5 complete) ✅  
-**Next**: Phase 2 - Smart Contract Development
+**Status**: Phase 2 In Progress - Smart Contract Development Started  
+- Phase 1 Complete: All infrastructure ready (Steps 1.1-1.5) ✅  
+- Phase 2.1 Complete: IPYUSD interface created and tested ✅  
+**Next**: Step 2.2 - Implement Ticketify Main Contract
 
