@@ -23,7 +23,7 @@ ticketify/
 
 ### `/client` - Frontend Application
 
-**Technology**: Next.js 14 with React
+**Technology**: Next.js 14 with React and App Router
 
 **Purpose**: User-facing web application for event browsing, ticket purchasing, and dashboard management.
 
@@ -37,6 +37,91 @@ ticketify/
 **State Management**: Zustand  
 **Styling**: Tailwind CSS + Shadcn/ui  
 **Blockchain**: Ethers.js v6
+
+**Directory Structure**:
+```
+client/
+├── app/                # Next.js 14 App Router
+│   ├── layout.jsx     # Root layout with Inter font, metadata
+│   ├── page.jsx       # Homepage
+│   └── globals.css    # Tailwind CSS + design tokens
+├── components/         # React components (ready for Shadcn/ui)
+├── lib/               # Utility libraries
+│   ├── api.js         # Axios HTTP client
+│   ├── contracts.js   # Ethers.js blockchain helpers
+│   └── utils.js       # Tailwind class merger (cn)
+├── store/             # Zustand state stores (to be populated)
+├── hooks/             # Custom React hooks (to be populated)
+├── public/            # Static assets (images, fonts)
+├── tailwind.config.js # Tailwind + Shadcn/ui configuration
+├── next.config.js     # Next.js configuration
+├── postcss.config.js  # PostCSS for Tailwind processing
+├── jsconfig.json      # Path aliases (@/*)
+├── package.json       # Dependencies
+└── README.md          # Frontend documentation
+```
+
+**Key Files Explained**:
+
+**`app/layout.jsx`** - Root layout component
+- Wraps entire application
+- Loads Inter font from Google Fonts
+- Sets metadata (title, description)
+- Entry point for global providers (Privy, etc.)
+
+**`app/page.jsx`** - Homepage component
+- Landing page with hero section
+- "Browse Events" and "Create Event" CTAs
+- Uses Tailwind for styling
+
+**`app/globals.css`** - Global styles
+- Tailwind directives (@tailwind base, components, utilities)
+- CSS variables for Shadcn/ui theming (light/dark mode)
+- Custom color scheme using HSL values
+
+**`lib/api.js`** - HTTP client for backend API
+- Axios instance with base URL
+- Request interceptor: Auto-inject Bearer token from localStorage
+- Response interceptor: Handle 401 (token expiry), clear auth
+- All API endpoints pre-defined: events, tickets, users, auth
+- Error handling and token management
+
+**`lib/contracts.js`** - Blockchain interaction utilities
+- Contract addresses (Ticketify, PYUSD) from env
+- Provider and signer helpers
+- Contract instance getters
+- PYUSD helpers: formatPYUSD/parsePYUSD (6 decimals)
+- Chain ID: 11155111 (Sepolia)
+- ABI placeholders (to be populated after deployment)
+
+**`lib/utils.js`** - Utility functions
+- `cn()` function for merging Tailwind classes
+- Uses clsx and tailwind-merge
+
+**`tailwind.config.js`** - Tailwind configuration
+- Shadcn/ui design tokens
+- CSS variable-based theming
+- Dark mode support (class-based)
+- Custom colors, border radius, animations
+- Responsive breakpoints
+- Content paths for all component files
+
+**`next.config.js`** - Next.js configuration
+- React strict mode enabled
+- Image optimization domains
+- Environment variable exposure
+- Remote image patterns
+
+**`jsconfig.json`** - JavaScript configuration
+- Path alias: `@/*` maps to project root
+- Enables cleaner imports: `@/components/Button`
+
+**Environment Variables** (see `env.local.template`):
+- API: NEXT_PUBLIC_API_URL
+- Contracts: NEXT_PUBLIC_CONTRACT_ADDRESS, NEXT_PUBLIC_PYUSD_ADDRESS
+- Network: NEXT_PUBLIC_CHAIN_ID, NEXT_PUBLIC_NETWORK_NAME
+- Auth: NEXT_PUBLIC_PRIVY_APP_ID
+- Explorer: NEXT_PUBLIC_ETHERSCAN_URL
 
 ---
 
@@ -184,10 +269,28 @@ User → Frontend (client/) → Backend API (server/) → MongoDB
 
 **Root Level**:
 - `README.md` - Project overview
+- `package.json` - Monorepo workspace configuration
 - `.gitignore` - Root-level git ignore rules
 
-**Client Directory**:
-- `.gitignore` - Next.js specific ignores (node_modules, .next/, .env files)
+**Client Directory** (Frontend Application):
+- `app/layout.jsx` - Root layout, Inter font, metadata
+- `app/page.jsx` - Homepage with welcome UI
+- `app/globals.css` - Tailwind + CSS variables for theming
+- `lib/api.js` - Axios client with auth interceptors, all endpoints
+- `lib/contracts.js` - Ethers.js helpers, PYUSD 6-decimal handling
+- `lib/utils.js` - cn() utility for Tailwind class merging
+- `tailwind.config.js` - Shadcn/ui theme configuration
+- `next.config.js` - Next.js settings, env vars
+- `postcss.config.js` - PostCSS for Tailwind
+- `jsconfig.json` - Path aliases (@/*)
+- `package.json` - All dependencies (Next 14, React, Tailwind, Zustand, Privy, Ethers, etc.)
+- `env.local.template` - Environment variables (copy to .env.local)
+- `README.md` - Frontend setup documentation
+- `.gitignore` - Next.js ignores (.next/, .env*, node_modules)
+- `components/` - React components (to be populated)
+- `store/` - Zustand stores (to be populated)
+- `hooks/` - Custom hooks (to be populated)
+- `public/` - Static assets
 
 **Server Directory**:
 - `.gitignore` - Backend ignores (node_modules, .env, logs/, uploads/)
@@ -289,6 +392,43 @@ PYUSD_ADDRESS - PYUSD token contract address on Sepolia
 
 ---
 
-**Status**: Backend server infrastructure ready (Steps 1.1-1.3 complete)  
-**Next**: Frontend application setup (Step 1.4)
+---
+
+## Database
+
+### MongoDB Atlas
+
+**Connection**: MongoDB with Mongoose ODM  
+**Database Name**: ticketify  
+**Environment**: Development (free tier M0)
+
+**Configuration**:
+- Connection utility: `server/utils/db.js`
+- Connection string: Configured via `MONGODB_URI` environment variable
+- Retry writes: Enabled
+- Write concern: Majority
+- Timeouts: 5s server selection, 45s socket
+
+**Connection Features**:
+- Automatic reconnection on failure
+- Event listeners (error, disconnect)
+- Graceful shutdown (SIGINT handling)
+- Connection status logging
+
+**Collections** (to be created in Phase 3):
+- `users` - User accounts and Google Calendar tokens
+- `events` - Event metadata and Google Meet links
+- `tickets` - Ticket purchases with three-state flow
+
+**Indexes** (defined in schemas, to be implemented):
+- User: walletAddress, email
+- Event: contractEventId, owner, dateTime, isActive
+- Ticket: (event + buyerWalletAddress) compound unique
+
+See [database-spec.md](./database-spec.md) for complete schema definitions.
+
+---
+
+**Status**: Phase 1 Complete - All infrastructure ready (Steps 1.1-1.5 complete) ✅  
+**Next**: Phase 2 - Smart Contract Development
 
