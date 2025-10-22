@@ -1007,9 +1007,159 @@ require(!hasPurchased, "Already purchased");
 
 ---
 
+#### ✅ 2.8 Deploy to Sepolia Testnet (Day 3)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Updated Hardhat configuration for Sepolia network with optimizer
+- Installed dotenv for environment variable management
+- Created comprehensive deployment script with validation
+- Successfully deployed Ticketify contract to Sepolia
+- Verified contract source code on Etherscan
+- All deployment validations passed
+
+**Deployed Contract Details**:
+- **Contract Address**: `0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e`
+- **Network**: Sepolia Testnet (Chain ID: 11155111)
+- **Deployer**: `0x117a3e11a93b2c88713bd35be47fafb81e4461c5`
+- **Block Number**: 9465205
+- **Etherscan**: https://sepolia.etherscan.io/address/0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e#code
+- **PYUSD Address**: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
+- **Gas Used**: ~2.24M gas for deployment
+- **Verification Status**: ✅ Successfully verified on Etherscan
+
+**Files Created/Modified**:
+
+**1. hardhat.config.ts** - Updated Configuration
+- Added dotenv support for environment variables
+- Configured Sepolia network (Chain ID: 11155111, RPC URL from .env)
+- Added Etherscan V2 API integration for verification
+- Enabled Solidity optimizer (200 runs) for gas efficiency
+- Disabled Sourcify verification (not needed)
+- Set up deployer account from PRIVATE_KEY environment variable
+
+**2. scripts/deploy.ts** - Deployment Script (130 lines)
+- Comprehensive TypeScript deployment script
+- Pre-deployment validations:
+  - Environment variable checks
+  - Deployer balance verification (warns if < 0.01 ETH)
+  - PYUSD address validation
+- Automated contract deployment with PYUSD address parameter
+- Post-deployment state verification:
+  - Owner address matches deployer ✅
+  - PYUSD token address correct ✅
+  - Platform fee set to 250 basis points (2.5%) ✅
+  - Event counter initialized to 0 ✅
+- Formatted output with deployment summary
+- Provides next steps for verification and integration
+- Error handling with clear messages and exit codes
+
+**Deployment Process**:
+
+**Pre-deployment Environment**:
+- Sepolia RPC URL configured (from Alchemy/Infura)
+- Private key loaded from .env file
+- Etherscan API key configured for verification
+- PYUSD Sepolia address: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
+- Deployer had sufficient ETH balance (0.2 ETH)
+
+**Deployment Command**:
+```bash
+npx hardhat run scripts/deploy.ts --network sepolia
+```
+
+**Verification Command**:
+```bash
+npx hardhat verify --network sepolia 0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e 0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9
+```
+
+**Deployment Script Features**:
+- Color-coded console output for better readability
+- Pre-flight checks (balance, network, PYUSD address)
+- Automatic contract state validation after deployment
+- All validation checks passed successfully
+- Clear next steps and integration instructions
+- Deployment summary with all critical information
+
+**Hardhat Configuration**:
+- **Solidity**: 0.8.28 with optimizer enabled (200 runs)
+- **Network**: Sepolia via RPC URL from environment
+- **Accounts**: Single deployer from PRIVATE_KEY
+- **Etherscan**: V2 API configuration
+- **Gas Optimization**: Enabled for production deployment
+
+**Contract Verification on Etherscan**:
+- Source code successfully submitted and verified ✅
+- Contract is now readable on Etherscan
+- Users can interact via Read/Write Contract tabs
+- ABI is publicly available
+- Constructor arguments verified (PYUSD address)
+- All inherited contracts (Ownable, ReentrancyGuard) visible
+
+**Post-Deployment Validation Results**:
+```
+Owner: 0x117A3E11a93B2C88713bd35bE47FaFb81E4461C5 ✅
+PYUSD Token: 0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9 ✅
+Platform Fee: 250 basis points (2.5%) ✅
+Event Counter: 0 ✅
+```
+
+**Environment Variables to Update**:
+After deployment, these files need to be updated with the contract address:
+```bash
+# contracts/.env
+CONTRACT_ADDRESS=0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e
+
+# server/.env (when created)
+CONTRACT_ADDRESS=0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e
+
+# client/.env.local (when created)
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e
+```
+
+**Etherscan Features Available**:
+- Read Contract: All view functions callable
+- Write Contract: All state-changing functions (requires wallet connection)
+- Events: All emitted events visible
+- Code: Verified source code with syntax highlighting
+- ABI: JSON ABI for frontend integration
+- Constructor Args: Shows PYUSD address parameter
+
+**Gas Costs**:
+- Contract deployment: ~2.24M gas (~0.01-0.05 ETH depending on gas price)
+- Actual cost depends on Sepolia network congestion
+- Gas price on Sepolia is typically very low
+
+**Security Validation**:
+- ✅ Contract is immutable (no upgrade mechanism)
+- ✅ Owner set to deployer address
+- ✅ PYUSD address correctly configured
+- ✅ Platform fee immutable at 2.5%
+- ✅ ReentrancyGuard protection active
+- ✅ All tests passed before deployment (62/62)
+
+**Integration Ready**:
+The deployed contract is ready for:
+- Backend API integration (event listening, transaction verification)
+- Frontend integration (event creation, ticket purchases, withdrawals)
+- Google Calendar integration (off-chain attendee management)
+- Email notifications (SendGrid integration)
+
+**Notes for developers**:
+- Contract address: `0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e`
+- View on Etherscan: https://sepolia.etherscan.io/address/0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e
+- PYUSD Sepolia: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
+- Network: Sepolia (Chain ID: 11155111)
+- Contract is immutable (cannot be upgraded)
+- All 62 tests passed before deployment
+- Source code verified and publicly readable
+- Use this address for all frontend/backend integrations
+
+---
+
 ## Next Steps
 
-**Phase 2: Smart Contract Development (Days 2-3)**
+**Phase 2: Smart Contract Development (Days 2-3)** ✅ COMPLETE
 - [x] 2.1 Create PYUSD Interface ✅
 - [x] 2.2 Implement Ticketify Main Contract ✅
 - [x] 2.3 Implement createEvent Function ✅
@@ -1017,7 +1167,18 @@ require(!hasPurchased, "Already purchased");
 - [x] 2.5 Implement Withdrawal Functions ✅
 - [x] 2.6 Add View Functions ✅
 - [x] 2.7 Write Comprehensive Tests ✅
-- [ ] 2.8 Deploy to Sepolia Testnet
+- [x] 2.8 Deploy to Sepolia Testnet ✅
+
+**Phase 3: Backend API Development (Days 4-5)** - Ready to Start
+- [ ] 3.1 Create Database Models
+- [ ] 3.2 Setup Authentication Middleware
+- [ ] 3.3 Implement Google OAuth Integration
+- [ ] 3.4 Implement Google Calendar Functions
+- [ ] 3.5 Create Events API Routes
+- [ ] 3.6 Create Tickets API Routes
+- [ ] 3.7 Create Users API Routes
+- [ ] 3.8 Implement Email Notifications
+- [ ] 3.9 Add Blockchain Event Listening
 
 ---
 
@@ -1027,6 +1188,7 @@ require(!hasPurchased, "Already purchased");
 - Testing each step before proceeding to next
 - Documenting progress for future developers
 - Phase 1 infrastructure complete ✅
-- Phase 2: Steps 2.1-2.7 complete ✅ (All contract functions implemented and tested)
-- Ready for deployment (Step 2.8)
+- **Phase 2 complete ✅** - All smart contracts implemented, tested, and deployed
+- Contract deployed to Sepolia and verified on Etherscan
+- Ready to begin Phase 3: Backend API Development
 

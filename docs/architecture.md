@@ -644,7 +644,38 @@ See [database-spec.md](./database-spec.md) for complete schema definitions.
 
 ---
 
-**Status**: Phase 2 In Progress - Smart Contract Development  
+**Deployment Information** (Step 2.8) ✅:
+
+**Deployed Contract**:
+- **Address**: `0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e`
+- **Network**: Sepolia Testnet (Chain ID: 11155111)
+- **Etherscan**: https://sepolia.etherscan.io/address/0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e#code
+- **Verification**: ✅ Source code verified on Etherscan
+- **Deployer**: 0x117a3e11a93b2c88713bd35be47fafb81e4461c5
+- **Block Number**: 9465205
+- **PYUSD Address**: 0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9
+
+**Deployment Files**:
+- `contracts/hardhat.config.ts` - Updated with Sepolia network, Etherscan V2 API, optimizer enabled
+- `contracts/scripts/deploy.ts` - Comprehensive deployment script with validation (130 lines)
+- Deployment uses environment variables from `.env` file (SEPOLIA_RPC_URL, PRIVATE_KEY, ETHERSCAN_API_KEY)
+
+**Contract Configuration**:
+- Owner: Deployer address (immutable)
+- Platform Fee: 250 basis points (2.5%)
+- PYUSD Token: Sepolia PYUSD at specified address
+- Event Counter: Initialized to 0
+- Optimizer: Enabled with 200 runs
+
+**Integration Ready**:
+All environment files should be updated with deployed contract address:
+- `contracts/.env`: CONTRACT_ADDRESS=0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e
+- `server/.env`: CONTRACT_ADDRESS=0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e
+- `client/.env.local`: NEXT_PUBLIC_CONTRACT_ADDRESS=0x1cc7fa86240f105aa1f1fa9f795f9530c881b12e
+
+---
+
+**Status**: Phase 2 Complete ✅ - Smart Contract Development  
 - Phase 1 Complete: All infrastructure ready (Steps 1.1-1.5) ✅  
 - Phase 2.1 Complete: IPYUSD interface created ✅  
 - Phase 2.2 Complete: Ticketify main contract implemented ✅  
@@ -653,5 +684,6 @@ See [database-spec.md](./database-spec.md) for complete schema definitions.
 - Phase 2.5 Complete: Withdrawal functions implemented ✅  
 - Phase 2.6 Complete: View functions implemented (7 functions) ✅  
 - Phase 2.7 Complete: Comprehensive tests written (62 tests passing) ✅  
-**Next**: Step 2.8 - Deploy to Sepolia Testnet
+- Phase 2.8 Complete: Deployed to Sepolia and verified on Etherscan ✅  
+**Next**: Phase 3 - Backend API Development
 
