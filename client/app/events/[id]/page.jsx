@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import moment from 'moment';
 import { apiClient } from '@/lib/api';
-import useAuthStore from '@/store/authStore';
+import { useAuthStore } from '@/store/authStore';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 

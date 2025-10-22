@@ -52,5 +52,5 @@ const useTicketsStore = create((set) => ({
   }),
 }));
 
-export default useTicketsStore;
+export { useTicketsStore };
 

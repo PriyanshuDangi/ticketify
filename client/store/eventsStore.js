@@ -74,5 +74,5 @@ const useEventsStore = create((set) => ({
   }),
 }));
 
-export default useEventsStore;
+export { useEventsStore };
 

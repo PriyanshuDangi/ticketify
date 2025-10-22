@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import moment from 'moment';
 import { apiClient } from '@/lib/api';
-import useAuthStore from '@/store/authStore';
+import { useAuthStore } from '@/store/authStore';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import EmptyState from '@/components/EmptyState';
