@@ -296,11 +296,11 @@ contract Ticketify is Ownable, ReentrancyGuard {
     function withdrawRevenue(uint256 eventId) external nonReentrant {
         Event storage eventData = events[eventId];
 
+        // Validate event exists (check first for better error messages)
+        require(eventData.organizer != address(0), "Event does not exist");
+
         // Validate caller is event organizer
         require(msg.sender == eventData.organizer, "Only organizer can withdraw");
-
-        // Validate event exists
-        require(eventData.organizer != address(0), "Event does not exist");
 
         // Validate has tickets sold
         require(eventData.ticketsSold > 0, "No tickets sold");
