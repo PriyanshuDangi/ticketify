@@ -364,6 +364,107 @@ contract Ticketify is Ownable, ReentrancyGuard {
         );
     }
 
+    // ============ View Functions ============
+
+    /**
+     * @dev Get complete event details by ID
+     * @param eventId The ID of the event to query
+     * @return Event struct containing all event information
+     * 
+     * @notice Returns default values if event doesn't exist
+     * @notice Check organizer != address(0) to verify event exists
+     */
+    function getEvent(uint256 eventId) external view returns (Event memory) {
+        return events[eventId];
+    }
+
+    /**
+     * @dev Get number of tickets sold for an event
+     * @param eventId The ID of the event to query
+     * @return Number of tickets sold
+     * 
+     * @notice Returns 0 if event doesn't exist
+     */
+    function getTicketsSold(uint256 eventId) external view returns (uint256) {
+        return events[eventId].ticketsSold;
+    }
+
+    /**
+     * @dev Check if a user has purchased a ticket for an event
+     * @param eventId The ID of the event to check
+     * @param user The address of the user to check
+     * @return bool True if user has purchased, false otherwise
+     * 
+     * @notice Used to enforce one ticket per wallet per event rule
+     */
+    function hasUserPurchasedTicket(uint256 eventId, address user) external view returns (bool) {
+        return hasPurchasedTicket[eventId][user];
+    }
+
+    /**
+     * @dev Calculate total revenue for an event (organizer's share)
+     * @param eventId The ID of the event to calculate revenue for
+     * @return Total revenue in PYUSD (6 decimals) after platform fee deduction
+     * 
+     * @notice This is the amount organizer can withdraw
+     * @notice Platform fee (2.5%) is already deducted from this amount
+     * @notice Returns 0 if event doesn't exist or has no sales
+     * 
+     * Example: 
+     * - Ticket price: 10.50 PYUSD (10,500,000 in 6 decimals)
+     * - Platform fee per ticket: 0.2625 PYUSD (262,500)
+     * - Organizer share per ticket: 10.2375 PYUSD (10,237,500)
+     * - If 10 tickets sold: 102.375 PYUSD total (102,375,000)
+     */
+    function getEventRevenue(uint256 eventId) external view returns (uint256) {
+        Event memory eventData = events[eventId];
+        
+        if (eventData.ticketsSold == 0) {
+            return 0;
+        }
+
+        // Calculate organizer's share (total revenue - platform fees)
+        uint256 platformFeePerTicket = (eventData.price * PLATFORM_FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
+        uint256 organizerSharePerTicket = eventData.price - platformFeePerTicket;
+        uint256 totalOrganizerRevenue = organizerSharePerTicket * eventData.ticketsSold;
+
+        return totalOrganizerRevenue;
+    }
+
+    /**
+     * @dev Get accumulated platform fees available for withdrawal
+     * @return Total platform fees in PYUSD (6 decimals)
+     * 
+     * @notice Only contract owner can withdraw these fees
+     * @notice Fees accumulate from all ticket sales across all events
+     */
+    function getPlatformFees() external view returns (uint256) {
+        return platformFeesAccumulated;
+    }
+
+    /**
+     * @dev Get all tickets for an event
+     * @param eventId The ID of the event to query
+     * @return Array of Ticket structs for the event
+     * 
+     * @notice Returns empty array if event doesn't exist or has no tickets
+     * @notice Gas cost increases with number of tickets - use with caution
+     */
+    function getEventTickets(uint256 eventId) external view returns (Ticket[] memory) {
+        return eventTickets[eventId];
+    }
+
+    /**
+     * @dev Get current event counter (total events created)
+     * @return Total number of events created
+     * 
+     * @notice Event IDs start at 0, so total events = eventCounter
+     * @notice Next event will have ID = eventCounter
+     */
+    function getEventCounter() external view returns (uint256) {
+        return eventCounter;
+    }
+
     // Future enhancement: Refund functionality
     // function refundTicket(uint256 eventId) external nonReentrant {
     //     // Refund logic to be implemented in future version

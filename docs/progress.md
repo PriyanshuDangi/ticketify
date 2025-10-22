@@ -764,6 +764,120 @@ emit PlatformFeesWithdrawn(owner, amount);
 
 ---
 
+#### ✅ 2.6 Add View Functions (Day 2)
+**Completed**: October 22, 2025
+
+**What was done**:
+- Implemented 7 view functions for querying contract data
+- All functions use `view` modifier (no gas cost for external calls)
+- Added comprehensive NatSpec documentation for each function
+- Included practical examples and usage notes in comments
+
+**View Functions Implemented**:
+
+**1. getEvent(eventId)** - Get Complete Event Details
+- Returns full Event struct with all 8 fields
+- Returns default values if event doesn't exist
+- Check `organizer != address(0)` to verify event exists
+- Used by frontend to display event information
+
+**2. getTicketsSold(eventId)** - Get Ticket Count
+- Returns number of tickets sold for an event
+- Returns 0 if event doesn't exist
+- Simple counter for capacity tracking
+- Used to calculate spots remaining
+
+**3. hasUserPurchasedTicket(eventId, user)** - Check Purchase Status
+- Returns boolean: true if user has purchased, false otherwise
+- Used to enforce one ticket per wallet per event rule
+- Frontend checks this before allowing purchase
+- Prevents duplicate purchase attempts
+
+**4. getEventRevenue(eventId)** - Calculate Organizer Revenue
+- Returns total withdrawable revenue for organizer
+- Platform fee (2.5%) already deducted
+- Returns 0 if no tickets sold
+- Formula: (price - platform fee) × tickets sold
+- Example: 10 tickets at 10.50 PYUSD → 102.375 PYUSD organizer revenue
+- Used in dashboard to show expected withdrawal amount
+
+**5. getPlatformFees()** - Get Accumulated Platform Fees
+- Returns total platform fees available for withdrawal
+- Only contract owner can withdraw
+- Accumulates 2.5% from each ticket sale
+- Used by platform owner to track revenue
+
+**6. getEventTickets(eventId)** - Get All Tickets for Event
+- Returns array of all Ticket structs for an event
+- Includes eventId, buyer address, and purchase timestamp
+- Returns empty array if no tickets
+- Gas cost scales with ticket count - use carefully
+- Used by organizers to see attendee list
+
+**7. getEventCounter()** - Get Total Events Created
+- Returns current event counter
+- Indicates next event ID
+- Total events created = eventCounter (IDs start at 0)
+- Used for analytics and event enumeration
+
+**Key Features**:
+- All functions are `external view` (no gas cost when called externally)
+- Comprehensive documentation with examples
+- Safe to call with invalid IDs (returns defaults, doesn't revert)
+- Optimized for frontend integration
+
+**Gas Efficiency**:
+- View functions don't consume gas when called externally
+- `getEventTickets()` gas cost scales with ticket count (O(n))
+- Other functions are O(1) constant time
+- Using memory for return values to avoid storage reads where possible
+
+**Integration Points**:
+- **Frontend**: Calls these functions to display event data
+- **Dashboard**: Uses getEventRevenue() to show withdrawal amounts
+- **Ticket Purchase**: Uses hasUserPurchasedTicket() to prevent duplicates
+- **Event List**: Uses getTicketsSold() to show spots remaining
+- **Platform Admin**: Uses getPlatformFees() to track platform revenue
+
+**Validation tests passed**:
+- ✅ `npx hardhat compile` - Compiled 1 Solidity file successfully
+- ✅ No compilation errors or warnings
+- ✅ All view functions follow Solidity best practices
+- ✅ NatSpec documentation complete for all functions
+- ✅ Return types correctly specified
+- ✅ Gas-efficient implementations
+
+**Usage Examples**:
+
+**Check if sold out**:
+```solidity
+uint256 ticketsSold = getTicketsSold(eventId);
+uint256 maxAttendees = getEvent(eventId).maxAttendees;
+bool isSoldOut = ticketsSold >= maxAttendees;
+```
+
+**Calculate spots remaining**:
+```solidity
+Event memory eventData = getEvent(eventId);
+uint256 spotsRemaining = eventData.maxAttendees - eventData.ticketsSold;
+```
+
+**Verify user hasn't purchased**:
+```solidity
+bool hasPurchased = hasUserPurchasedTicket(eventId, userAddress);
+require(!hasPurchased, "Already purchased");
+```
+
+**Notes for developers**:
+- View functions are free to call externally (no gas cost)
+- Always check `organizer != address(0)` when using getEvent() to verify event exists
+- getEventTickets() can be expensive for events with many tickets
+- Use getTicketsSold() instead of length of getEventTickets() for efficiency
+- Revenue calculation matches withdrawRevenue() logic exactly
+- All PYUSD amounts use 6 decimals
+
+---
+
 ## Next Steps
 
 **Phase 2: Smart Contract Development (Days 2-3)**
@@ -772,7 +886,7 @@ emit PlatformFeesWithdrawn(owner, amount);
 - [x] 2.3 Implement createEvent Function ✅
 - [x] 2.4 Implement purchaseTicket Function ✅
 - [x] 2.5 Implement Withdrawal Functions ✅
-- [ ] 2.6 Add View Functions
+- [x] 2.6 Add View Functions ✅
 - [ ] 2.7 Write Comprehensive Tests
 - [ ] 2.8 Deploy to Sepolia Testnet
 
@@ -784,5 +898,6 @@ emit PlatformFeesWithdrawn(owner, amount);
 - Testing each step before proceeding to next
 - Documenting progress for future developers
 - Phase 1 infrastructure complete ✅
-- Phase 2 in progress: All core functions implemented ✅
+- Phase 2 in progress: All contract functions implemented ✅ (Steps 2.1-2.6)
+- Ready for testing phase (Step 2.7)
 

@@ -343,6 +343,65 @@ contracts/
 - Organizer receives: ticket price - platform fee (via withdrawRevenue)
 - Platform owner withdraws all fees at once (via withdrawPlatformFees)
 
+**View Functions Implemented** (Step 2.6) ✅:
+
+**`getEvent(eventId)`** - Query Event Details
+- Returns complete Event struct with all 8 fields
+- No gas cost when called externally (view function)
+- Returns default values if event doesn't exist
+- Frontend should check `organizer != address(0)` to verify existence
+- Used to display event information on event detail pages
+- Return type: Event struct (id, organizer, price, maxAttendees, eventTime, isActive, ticketsSold, hasWithdrawn)
+
+**`getTicketsSold(eventId)`** - Get Ticket Count
+- Returns number of tickets sold for an event
+- Returns 0 if event doesn't exist
+- O(1) constant time operation
+- Used to calculate spots remaining: `maxAttendees - ticketsSold`
+- More efficient than calling `getEventTickets().length`
+
+**`hasUserPurchasedTicket(eventId, user)`** - Check Purchase Status
+- Returns boolean: true if user purchased, false otherwise
+- Used by frontend to prevent duplicate purchases
+- Enforces one ticket per wallet per event rule
+- Check before showing "Buy Ticket" button
+- Example: `bool canBuy = !hasUserPurchasedTicket(eventId, walletAddress)`
+
+**`getEventRevenue(eventId)`** - Calculate Organizer Revenue
+- Returns total withdrawable amount for organizer (after 2.5% platform fee)
+- Returns 0 if no tickets sold
+- Calculation: (price - platform fee) × tickets sold
+- Example: 10 tickets × 10.50 PYUSD → 102.375 PYUSD organizer revenue
+- Used in dashboard to show expected withdrawal amount
+- Matches withdrawRevenue() calculation exactly
+
+**`getPlatformFees()`** - Get Accumulated Platform Fees
+- Returns total platform fees available for withdrawal
+- Accumulates 2.5% from all ticket sales
+- Only contract owner can withdraw (via withdrawPlatformFees())
+- Used by platform admin to track revenue
+
+**`getEventTickets(eventId)`** - Get All Tickets for Event
+- Returns array of Ticket structs (eventId, buyer, purchaseTime)
+- Returns empty array if no tickets
+- Gas cost scales with ticket count (O(n))
+- Use sparingly for events with many tickets
+- Used by organizers to view attendee list
+- Consider pagination for large events
+
+**`getEventCounter()`** - Get Total Events Created
+- Returns current event counter
+- Next event will have ID = eventCounter
+- Total events = eventCounter (IDs start at 0)
+- Used for analytics and event enumeration
+
+**View Function Characteristics**:
+- All functions use `external view` modifier
+- No gas cost when called externally (read-only)
+- Safe to call with invalid IDs (returns defaults, doesn't revert)
+- Comprehensive NatSpec documentation
+- Optimized for frontend integration
+
 **Integration Points**:
 - Backend listens to `EventCreated` → creates MongoDB + Google Calendar event
 - Backend listens to `TicketPurchased` → updates ticket status + adds to calendar
@@ -351,6 +410,7 @@ contracts/
 - Frontend: User approves PYUSD → calls `purchaseTicket()` → confirmation
 - Frontend: Organizer dashboard shows "Withdraw" button → calls `withdrawRevenue()`
 - Frontend must call PYUSD `approve()` before `purchaseTicket()`
+- Frontend uses view functions to display real-time event data
 - All PYUSD amounts use 6 decimals (UI converts 2 decimals → 6 decimals)
 - Constructor requires PYUSD Sepolia address: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
 
@@ -558,5 +618,6 @@ See [database-spec.md](./database-spec.md) for complete schema definitions.
 - Phase 2.3 Complete: createEvent function implemented ✅  
 - Phase 2.4 Complete: purchaseTicket function implemented ✅  
 - Phase 2.5 Complete: Withdrawal functions implemented ✅  
-**Next**: Step 2.6 - Add View Functions
+- Phase 2.6 Complete: View functions implemented (7 functions) ✅  
+**Next**: Step 2.7 - Write Comprehensive Tests
 
