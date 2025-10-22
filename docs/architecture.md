@@ -219,7 +219,7 @@ contracts/
 ```
 
 **Key Contracts**:
-- `Ticketify.sol` - Main contract (createEvent ✅, purchaseTicket ✅, withdrawals in progress)
+- `Ticketify.sol` - Main contract (createEvent ✅, purchaseTicket ✅, withdrawals ✅, view functions in progress)
 - `IPYUSD.sol` - ERC-20 interface for PYUSD token ✅
 
 **Dependencies**:
@@ -315,17 +315,41 @@ contracts/
 - Protected by `nonReentrant` modifier against reentrancy attacks
 - Uses `Event storage` reference for gas efficiency
 
+**`withdrawRevenue(eventId)`** - Organizer Revenue Withdrawal ✅
+- Single parameter: eventId to withdraw from
+- Validates: caller is organizer, event exists, has sales, not already withdrawn
+- **No time restrictions** - organizers can withdraw anytime (core business rule)
+- Calculates organizer share: (price - 2.5% fee) × tickets sold
+- Marks hasWithdrawn = true to prevent double withdrawal
+- Transfers PYUSD from contract to organizer
+- Emits `RevenueWithdrawn` for backend sync
+- Protected by `nonReentrant` modifier
+- Uses `Event storage` reference for gas efficiency
+- Example: 10 tickets at 10.50 PYUSD → organizer gets 102.375 PYUSD
+
+**`withdrawPlatformFees()`** - Platform Fee Collection ✅
+- No parameters - withdraws all accumulated fees
+- Validates: caller is owner (onlyOwner), fees available
+- Resets `platformFeesAccumulated` to 0 after withdrawal
+- Transfers PYUSD from contract to platform owner
+- Emits `PlatformFeesWithdrawn` for tracking
+- Protected by `nonReentrant` and `onlyOwner` modifiers
+- Platform owner should periodically call this function
+
 **Platform Fee Flow**:
 - 2.5% of each ticket sale goes to platform
 - Accumulated in contract as `platformFeesAccumulated`
 - Example: 10.50 PYUSD ticket → 0.2625 PYUSD platform fee
-- Organizer receives: ticket price - platform fee
-- Platform owner withdraws accumulated fees separately
+- Organizer receives: ticket price - platform fee (via withdrawRevenue)
+- Platform owner withdraws all fees at once (via withdrawPlatformFees)
 
 **Integration Points**:
-- Backend listens to `EventCreated` event → creates MongoDB + Google Calendar event
-- Backend listens to `TicketPurchased` event → updates ticket status + adds to calendar
-- Frontend: User approves PYUSD → calls `purchaseTicket()` → receives confirmation
+- Backend listens to `EventCreated` → creates MongoDB + Google Calendar event
+- Backend listens to `TicketPurchased` → updates ticket status + adds to calendar
+- Backend listens to `RevenueWithdrawn` → updates organizer balance display
+- Backend listens to `PlatformFeesWithdrawn` → tracks platform revenue
+- Frontend: User approves PYUSD → calls `purchaseTicket()` → confirmation
+- Frontend: Organizer dashboard shows "Withdraw" button → calls `withdrawRevenue()`
 - Frontend must call PYUSD `approve()` before `purchaseTicket()`
 - All PYUSD amounts use 6 decimals (UI converts 2 decimals → 6 decimals)
 - Constructor requires PYUSD Sepolia address: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
@@ -533,5 +557,6 @@ See [database-spec.md](./database-spec.md) for complete schema definitions.
 - Phase 2.2 Complete: Ticketify main contract skeleton implemented ✅  
 - Phase 2.3 Complete: createEvent function implemented ✅  
 - Phase 2.4 Complete: purchaseTicket function implemented ✅  
-**Next**: Step 2.5 - Implement Withdrawal Functions
+- Phase 2.5 Complete: Withdrawal functions implemented ✅  
+**Next**: Step 2.6 - Add View Functions
 

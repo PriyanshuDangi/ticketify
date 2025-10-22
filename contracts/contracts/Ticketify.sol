@@ -278,6 +278,92 @@ contract Ticketify is Ownable, ReentrancyGuard {
         );
     }
 
+    /**
+     * @dev Allows organizer to withdraw revenue from their event
+     * @param eventId The ID of the event to withdraw from
+     * 
+     * Requirements:
+     * - Caller must be the event organizer
+     * - Event must have sold at least one ticket
+     * - Organizer must not have already withdrawn
+     * - Can withdraw anytime (no time restrictions)
+     * 
+     * Emits RevenueWithdrawn event
+     * 
+     * @notice Platform fee (2.5%) is deducted automatically
+     * @notice Organizer can withdraw anytime - no restrictions
+     */
+    function withdrawRevenue(uint256 eventId) external nonReentrant {
+        Event storage eventData = events[eventId];
+
+        // Validate caller is event organizer
+        require(msg.sender == eventData.organizer, "Only organizer can withdraw");
+
+        // Validate event exists
+        require(eventData.organizer != address(0), "Event does not exist");
+
+        // Validate has tickets sold
+        require(eventData.ticketsSold > 0, "No tickets sold");
+
+        // Validate hasn't already withdrawn
+        require(!eventData.hasWithdrawn, "Revenue already withdrawn");
+
+        // Calculate organizer's share (total revenue - platform fees)
+        // Platform fee per ticket: (price * 250) / 10000
+        uint256 platformFeePerTicket = (eventData.price * PLATFORM_FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
+        uint256 organizerSharePerTicket = eventData.price - platformFeePerTicket;
+        uint256 totalOrganizerShare = organizerSharePerTicket * eventData.ticketsSold;
+
+        // Mark as withdrawn to prevent double withdrawal
+        eventData.hasWithdrawn = true;
+
+        // Transfer PYUSD to organizer
+        require(
+            pyusdToken.transfer(msg.sender, totalOrganizerShare),
+            "PYUSD transfer failed"
+        );
+
+        // Emit event for off-chain tracking
+        emit RevenueWithdrawn(
+            eventId,
+            msg.sender,
+            totalOrganizerShare
+        );
+    }
+
+    /**
+     * @dev Allows platform owner to withdraw accumulated platform fees
+     * 
+     * Requirements:
+     * - Caller must be contract owner
+     * - Must have accumulated fees available
+     * 
+     * Emits PlatformFeesWithdrawn event
+     * 
+     * @notice Only contract owner can call this function
+     */
+    function withdrawPlatformFees() external onlyOwner nonReentrant {
+        uint256 amount = platformFeesAccumulated;
+
+        // Validate fees available
+        require(amount > 0, "No fees to withdraw");
+
+        // Reset accumulated fees to zero
+        platformFeesAccumulated = 0;
+
+        // Transfer PYUSD to owner
+        require(
+            pyusdToken.transfer(msg.sender, amount),
+            "PYUSD transfer failed"
+        );
+
+        // Emit event for off-chain tracking
+        emit PlatformFeesWithdrawn(
+            msg.sender,
+            amount
+        );
+    }
+
     // Future enhancement: Refund functionality
     // function refundTicket(uint256 eventId) external nonReentrant {
     //     // Refund logic to be implemented in future version
