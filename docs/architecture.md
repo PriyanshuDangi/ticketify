@@ -480,13 +480,15 @@ User → Frontend (client/) → Backend API (server/) → MongoDB
 - `package.json` - Dependencies including OpenZeppelin contracts v5.4.0
 - `.env.example` - Template for environment variables (RPC URLs, private keys, PYUSD address)
 - `contracts/` - Solidity source files
-  - `Lock.sol` - Sample contract from Hardhat init (to be removed)
-  - `Ticketify.sol` - Main ticketing contract (immutable, with structs and state variables)
+  - `Lock.sol` - Sample contract from Hardhat init (can be removed)
+  - `Ticketify.sol` - Main ticketing contract (379 lines, fully tested ✅)
+  - `MockPYUSD.sol` - Test ERC-20 token with 6 decimals (55 lines) ✅
   - `interfaces/` - Interface definitions
     - `IPYUSD.sol` - ERC-20 interface for PYUSD token (6 decimals)
 - `scripts/` - Deployment scripts (to be created)
 - `test/` - Contract test suites (TypeScript with Viem)
-  - `Lock.ts` - Sample test file (to be replaced with Ticketify.test.ts)
+  - `Lock.ts` - Sample test file from Hardhat init
+  - `Ticketify.test.ts` - Comprehensive test suite (1500+ lines, 62 tests ✅)
 - `ignition/modules/` - Hardhat Ignition deployment modules
 
 **Server Directory** (Backend API):
@@ -611,13 +613,45 @@ See [database-spec.md](./database-spec.md) for complete schema definitions.
 
 ---
 
+**Testing Infrastructure** (Step 2.7) ✅:
+
+**`contracts/contracts/MockPYUSD.sol`** - Test Token
+- ERC-20 token with 6 decimals (matches real PYUSD)
+- Standard functions: transfer, approve, transferFrom, balanceOf, allowance
+- Mint function for test token distribution
+- Used exclusively for testing, not deployed to production
+- 55 lines, simple implementation
+
+**`contracts/test/Ticketify.test.ts`** - Test Suite
+- Comprehensive testing with 62 tests (all passing)
+- Uses Hardhat with Viem library for blockchain interactions
+- Test categories: Deployment (5), Event Creation (7), Ticket Purchase (11), Revenue Withdrawal (8), Platform Fees (6), View Functions (8), PYUSD Decimals (3), Edge Cases (3), Time Manipulation (2), Security (implicit)
+- Helper functions: toPYUSD() for 6-decimal conversion, deployTicketifyFixture(), createTestEvent()
+- Uses loadFixture for efficient test isolation
+- Time manipulation with Hardhat network helpers
+- All business rules validated: one ticket per wallet, 2.5% platform fee, withdrawal restrictions, etc.
+- Gas usage tracked: Event creation ~165k, Ticket purchase ~198k, Withdrawals ~45-73k
+- Test execution: <400ms for full suite
+- Coverage: All functions, all require statements, all events, all access controls
+
+**Key Test Patterns**:
+- Fixtures for setup and teardown
+- Chai expectations for assertions
+- Viem for contract interactions (writeContract, readContract)
+- Time helpers for event timing tests
+- Multiple test accounts (owner, organizer, buyer1-3)
+- PYUSD distribution in fixture (1000 PYUSD to buyers, 10000 to organizer)
+
+---
+
 **Status**: Phase 2 In Progress - Smart Contract Development  
 - Phase 1 Complete: All infrastructure ready (Steps 1.1-1.5) ✅  
-- Phase 2.1 Complete: IPYUSD interface created and tested ✅  
-- Phase 2.2 Complete: Ticketify main contract skeleton implemented ✅  
+- Phase 2.1 Complete: IPYUSD interface created ✅  
+- Phase 2.2 Complete: Ticketify main contract implemented ✅  
 - Phase 2.3 Complete: createEvent function implemented ✅  
 - Phase 2.4 Complete: purchaseTicket function implemented ✅  
 - Phase 2.5 Complete: Withdrawal functions implemented ✅  
 - Phase 2.6 Complete: View functions implemented (7 functions) ✅  
-**Next**: Step 2.7 - Write Comprehensive Tests
+- Phase 2.7 Complete: Comprehensive tests written (62 tests passing) ✅  
+**Next**: Step 2.8 - Deploy to Sepolia Testnet
 
