@@ -219,7 +219,7 @@ contracts/
 ```
 
 **Key Contracts**:
-- `Ticketify.sol` - Main contract with structs and state variables ✅ (functions in progress)
+- `Ticketify.sol` - Main contract (createEvent ✅, other functions in progress)
 - `IPYUSD.sol` - ERC-20 interface for PYUSD token ✅
 
 **Dependencies**:
@@ -283,16 +283,28 @@ contracts/
 - `RevenueWithdrawn`: Logged when organizer withdraws funds
 - `PlatformFeesWithdrawn`: Logged when platform owner withdraws fees
 
-**Business Logic** (to be implemented in functions):
+**Business Logic**:
 - Organizers can withdraw revenue anytime (no time restrictions)
 - One wallet can only buy one ticket per event (strictly enforced)
 - Platform automatically collects 2.5% fee on each ticket sale
 - Refund functionality placeholder included for future implementation
 
+**Functions Implemented**:
+
+**`createEvent(price, maxAttendees, eventTime)`** - Event Creation ✅
+- Anyone can create events (no restriction)
+- Validates: price > 0, maxAttendees > 0, eventTime in future
+- Auto-generates unique event ID (sequential counter)
+- Sets caller (msg.sender) as organizer
+- Initializes event: active=true, sold=0, withdrawn=false
+- Emits `EventCreated` for backend sync
+- Returns eventId for immediate frontend use
+- Gas optimized: external visibility, no redundant storage
+
 **Integration Points**:
-- Backend listens to emitted events to sync with MongoDB
-- Frontend calls contract functions via ethers.js
-- All PYUSD amounts use 6 decimals throughout
+- Backend listens to `EventCreated` event → creates MongoDB record + Google Calendar event
+- Frontend calls `createEvent()` → receives eventId → displays success
+- All PYUSD amounts use 6 decimals (UI converts 2 decimals → 6 decimals)
 - Constructor requires PYUSD Sepolia address: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
 
 ---
@@ -496,5 +508,6 @@ See [database-spec.md](./database-spec.md) for complete schema definitions.
 - Phase 1 Complete: All infrastructure ready (Steps 1.1-1.5) ✅  
 - Phase 2.1 Complete: IPYUSD interface created and tested ✅  
 - Phase 2.2 Complete: Ticketify main contract skeleton implemented ✅  
-**Next**: Step 2.3 - Implement createEvent Function
+- Phase 2.3 Complete: createEvent function implemented ✅  
+**Next**: Step 2.4 - Implement purchaseTicket Function
 

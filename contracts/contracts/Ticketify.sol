@@ -157,7 +157,58 @@ contract Ticketify is Ownable, ReentrancyGuard {
     }
 
     // ============ Functions ============
-    // Functions will be implemented in subsequent steps (2.3, 2.4, 2.5, 2.6)
+
+    /**
+     * @dev Creates a new event
+     * @param price Ticket price in PYUSD (6 decimals, e.g., 10.50 PYUSD = 10500000)
+     * @param maxAttendees Maximum number of tickets available
+     * @param eventTime Unix timestamp when event starts (must be in future)
+     * @return eventId The unique identifier for the created event
+     * 
+     * Requirements:
+     * - eventTime must be in the future
+     * - price must be greater than 0
+     * - maxAttendees must be greater than 0
+     * 
+     * Emits EventCreated event
+     */
+    function createEvent(
+        uint256 price,
+        uint256 maxAttendees,
+        uint256 eventTime
+    ) external returns (uint256) {
+        // Validate inputs
+        require(price > 0, "Price must be greater than 0");
+        require(maxAttendees > 0, "Max attendees must be greater than 0");
+        require(eventTime > block.timestamp, "Event time must be in future");
+
+        // Generate unique event ID
+        uint256 eventId = eventCounter;
+        eventCounter++;
+
+        // Create and store event
+        events[eventId] = Event({
+            id: eventId,
+            organizer: msg.sender,
+            price: price,
+            maxAttendees: maxAttendees,
+            eventTime: eventTime,
+            isActive: true,
+            ticketsSold: 0,
+            hasWithdrawn: false
+        });
+
+        // Emit event for off-chain tracking
+        emit EventCreated(
+            eventId,
+            msg.sender,
+            price,
+            maxAttendees,
+            eventTime
+        );
+
+        return eventId;
+    }
 
     // Future enhancement: Refund functionality
     // function refundTicket(uint256 eventId) external nonReentrant {
