@@ -1,17 +1,25 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Ticketify - Blockchain Event Ticketing',
-  description: 'Create and sell tickets for online events with PYUSD',
+  title: 'Ticketify - Blockchain Event Ticketing with PYUSD',
+  description: 'Create and sell tickets for online events using PYUSD stablecoin with automatic Google Meet access',
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <div className="relative flex min-h-screen flex-col">
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </div>
+      </body>
     </html>
   )
 }
