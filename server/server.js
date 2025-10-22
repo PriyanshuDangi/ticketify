@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./utils/db');
+const { errorHandler, notFound } = require('./middleware/errorHandler');
+const { startListening } = require('./utils/blockchainListener');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,53 +22,59 @@ app.get('/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    database: 'connected'
   });
 });
 
-// API Routes (to be added)
-// app.use('/api/auth', require('./routes/auth'));
-// app.use('/api/users', require('./routes/users'));
-// app.use('/api/events', require('./routes/events'));
-// app.use('/api/tickets', require('./routes/tickets'));
+// API Routes
+app.use('/api', require('./routes/users'));
+app.use('/api/events', require('./routes/events'));
+app.use('/api/tickets', require('./routes/tickets'));
 
 // 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message: 'Route not found'
-    }
-  });
-});
+app.use(notFound);
 
 // Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    success: false,
-    error: {
-      code: err.code || 'SERVER_ERROR',
-      message: err.message || 'Internal server error'
-    }
-  });
-});
+app.use(errorHandler);
 
 // Connect to database and start server
 const startServer = async () => {
   try {
+    // Connect to MongoDB
     await connectDB();
+    
+    // Start Express server
     app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
     });
+
+    // Start blockchain event listener
+    if (process.env.SEPOLIA_RPC_URL && process.env.CONTRACT_ADDRESS) {
+      setTimeout(() => {
+        startListening();
+      }, 2000); // Wait 2 seconds after server starts
+    } else {
+      console.log('⚠️ Blockchain listener not started - missing configuration');
+    }
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
     process.exit(1);
   }
 };
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  process.exit(0);
+});
 
 startServer();
 
