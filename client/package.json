@@ -17,14 +17,14 @@
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.31",
     "zustand": "^4.4.0",
-    "@privy-io/react-auth": "^1.0.0",
+    "@privy-io/react-auth": "^1.88.4",
     "ethers": "^6.8.0",
     "axios": "^1.5.0",
     "moment": "^2.29.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "tailwind-merge": "^2.0.0",
-    "lucide-react": "^0.294.0"
+    "lucide-react": "^0.460.0"
   },
   "devDependencies": {
     "eslint": "^8.0.0",

@@ -2,9 +2,44 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useEffect } from 'react';
+import { useAuthStore } from '@/store/authStore';
 
 export default function Header() {
   const router = useRouter();
+  const { ready, authenticated, user, login, logout } = usePrivy();
+  const { wallets } = useWallets();
+  const { setWallet, setUser, logout: storeLogout } = useAuthStore();
+
+  // Sync Privy wallet with auth store
+  useEffect(() => {
+    if (authenticated && wallets.length > 0) {
+      const wallet = wallets[0];
+      setWallet({
+        address: wallet.address,
+        chainId: wallet.chainId,
+      });
+      
+      if (user) {
+        setUser({
+          id: user.id,
+          email: user.email?.address,
+          wallet: wallet.address,
+        });
+      }
+    }
+  }, [authenticated, wallets, user, setWallet, setUser]);
+
+  const handleLogout = async () => {
+    await logout();
+    storeLogout();
+  };
+
+  const formatAddress = (address) => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -48,10 +83,35 @@ export default function Header() {
             Create Event
           </button>
           
-          {/* Wallet connection button - will be replaced with Privy in 4.2 */}
-          <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
-            Connect Wallet
-          </button>
+          {/* Privy Wallet Connection */}
+          {!ready ? (
+            <button 
+              disabled 
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+            >
+              Loading...
+            </button>
+          ) : authenticated && wallets.length > 0 ? (
+            <div className="flex items-center space-x-2">
+              <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-md bg-accent text-sm">
+                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                <span>{formatAddress(wallets[0].address)}</span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={login}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+            >
+              Connect Wallet
+            </button>
+          )}
         </div>
 
         {/* Mobile menu button */}
