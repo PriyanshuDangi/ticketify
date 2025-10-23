@@ -58,6 +58,8 @@ router.get('/google-callback', authenticate, handleGoogleCallback);
 //  */
 // router.post('/disconnect-google', authenticate, disconnectGoogle);
 
+// * GET /api/users/is-google-calendar-connected
+// * Check Google Calendar
 router.get('/is-google-calendar-connected', authenticate, isGoogleCalendarConnected);
 
 module.exports = router;

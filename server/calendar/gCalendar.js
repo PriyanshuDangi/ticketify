@@ -17,7 +17,11 @@ const connectGoogleCalendar = async (req, res) => {
         if (user?.isGoogleCalendarAdded == true) {
             //ToDo: put a req to check whether the old credentials are working or not
 
-            return res.status(200).send({message: 'Your calendar is already added'});
+            return res.status(200).send({
+                success: true,
+                message: 'Your calendar is already added',
+                isAlreadyConnected: true
+            });
         }
         const authUrl = OAuth2Client.generateAuthUrl({
             access_type: 'offline',
@@ -25,10 +29,20 @@ const connectGoogleCalendar = async (req, res) => {
             prompt: 'consent',
             login_hint: user?.email,
         });
-        res.redirect(authUrl);
+        // Return the auth URL instead of redirecting
+        res.status(200).json({
+            success: true,
+            authUrl: authUrl
+        });
     } catch (err) {
         console.log(err);
-        res.status(500).send({message: 'Unable to add the google calendar'});
+        res.status(500).send({
+            success: false,
+            error: {
+                code: 'GOOGLE_CALENDAR_ERROR',
+                message: 'Unable to generate Google Calendar authorization URL'
+            }
+        });
     }
 }
 
@@ -43,7 +57,7 @@ const handleGoogleCallback = async (req, res) => {
 
                 //ToDo: send error message to frontend
 
-                return res.redirect(process.env.DOMAIN + '/dashboard');
+                return res.redirect(process.env.FRONTEND_URL + '/dashboard?google_error=true');
             }
             OAuth2Client.setCredentials(token);
             // console.log(token);
@@ -65,11 +79,11 @@ const handleGoogleCallback = async (req, res) => {
 
             //ToDo: Send that it is successfully authenticatd
 
-            return res.redirect(process.env.FRONTEND_URL + '/profile');
+            return res.redirect(process.env.FRONTEND_URL + '/dashboard?google_connected=true');
         });
     } catch (err) {
         console.log(err);
-        res.status(500).send({message: 'Unable to connect google calendar'});
+        return res.redirect(process.env.FRONTEND_URL + '/dashboard?google_error=true');
     }
 }
 
@@ -77,7 +91,11 @@ const isGoogleCalendarConnected = async (req, res) => {
     try {
         const user = req.user;
         if (user.isGoogleCalendarAdded === false) {
-            return res.status(200).send({isGoogleCalendarAdded: false});
+            return res.status(200).json({
+                success: true,
+                isGoogleCalendarAdded: false,
+                isConnected: false
+            });
         }
         // ToDo:  Check is tokens revoked
         const token = req.user.googleCalendar;
@@ -92,18 +110,32 @@ const isGoogleCalendarConnected = async (req, res) => {
                 maxResults: 1,
             });
         } catch (err) {
-            console.log(err.response.data);
+            console.log(err.response?.data);
             if (err.response && err.response.data && err.response.data.error === 'invalid_grant') {
                 user.isGoogleCalendarAdded = false;
                 await user.save();
             }
-            return res.status(200).send({isGoogleCalendarAdded: false});
+            return res.status(200).json({
+                success: true,
+                isGoogleCalendarAdded: false,
+                isConnected: false
+            });
         }
-        res.status(200).send({isGoogleCalendarAdded: true});
+        res.status(200).json({
+            success: true,
+            isGoogleCalendarAdded: true,
+            isConnected: true
+        });
     } catch (err) {
         console.error(err);
-        console.log(err.response.data);
-        res.status(500).send({message: 'Unable to check its connected or not'});
+        console.log(err.response?.data);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'GOOGLE_CALENDAR_ERROR',
+                message: 'Unable to check Google Calendar connection'
+            }
+        });
     }
 }
 

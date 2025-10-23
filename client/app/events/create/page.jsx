@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import moment from 'moment';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
@@ -19,6 +20,8 @@ export default function CreateEventPage() {
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Date/Time, 3: Pricing, 4: Review
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [checkingGoogle, setCheckingGoogle] = useState(true);
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -40,16 +43,24 @@ export default function CreateEventPage() {
     }
   }, [ready, authenticated, router]);
 
-  // Check Google Calendar connection (optional warning, not blocking)
+  // Check Google Calendar connection
   useEffect(() => {
     const checkGoogleConnection = async () => {
-      if (authenticated && user && !user.isGoogleCalendarAdded) {
-        // Show warning but don't block - Google Calendar integration is optional for now
-        console.warn('Google Calendar not connected');
+      if (authenticated) {
+        try {
+          setCheckingGoogle(true);
+          const response = await apiClient.isGoogleCalendarConnected();
+          setIsGoogleConnected(response.data.isGoogleCalendarAdded || false);
+        } catch (err) {
+          console.error('Failed to check Google Calendar connection:', err);
+          setIsGoogleConnected(false);
+        } finally {
+          setCheckingGoogle(false);
+        }
       }
     };
     checkGoogleConnection();
-  }, [authenticated, user]);
+  }, [authenticated]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -234,6 +245,31 @@ export default function CreateEventPage() {
           </p>
         </div>
 
+        {/* Google Calendar Warning */}
+        {!checkingGoogle && !isGoogleConnected && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start gap-2">
+                <span className="text-red-600 text-xl">⚠️</span>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-red-900 mb-1">
+                    Google Calendar Not Connected
+                  </h3>
+                  <p className="text-sm text-red-800">
+                    You need to connect your Google Calendar before creating events. This allows automatic calendar event creation and attendee management.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/dashboard"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-6 text-sm font-medium text-white shadow transition-colors hover:bg-red-700 self-start"
+              >
+                Go to Dashboard to Connect
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Progress Steps */}
         <div className="flex items-center justify-between mb-8">
           {['Basic Info', 'Date & Time', 'Pricing', 'Review'].map((label, index) => (
@@ -264,7 +300,7 @@ export default function CreateEventPage() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className={`bg-white rounded-lg shadow-sm p-6 mb-6 ${!isGoogleConnected && !checkingGoogle ? 'opacity-50 pointer-events-none' : ''}`}>
           {error && (
             <div className="mb-6">
               <ErrorMessage message={error} />
@@ -517,7 +553,7 @@ export default function CreateEventPage() {
         <div className="flex justify-between">
           <button
             onClick={step === 1 ? () => router.push('/dashboard') : handleBack}
-            disabled={loading}
+            disabled={loading || (!isGoogleConnected && !checkingGoogle)}
             className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
           >
             {step === 1 ? 'Cancel' : 'Back'}
@@ -526,7 +562,7 @@ export default function CreateEventPage() {
           {step < 4 ? (
             <button
               onClick={handleNext}
-              disabled={loading}
+              disabled={loading || (!isGoogleConnected && !checkingGoogle)}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300"
             >
               Next
@@ -534,7 +570,7 @@ export default function CreateEventPage() {
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={loading || (!isGoogleConnected && !checkingGoogle)}
               className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 flex items-center gap-2"
             >
               {loading ? (

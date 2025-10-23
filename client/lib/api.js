@@ -62,6 +62,7 @@ export const apiClient = {
   getProfile: () => api.get('/api/users/me'),
   updateProfile: (data) => api.put('/api/users/me', data),
   connectGoogle: () => api.get('/api/users/connect-google'),
+  isGoogleCalendarConnected: () => api.get('/api/users/is-google-calendar-connected'),
   googleCallback: (data) => api.post('/api/users/google-callback', data),
 
   // Auth

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import moment from 'moment';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { apiClient } from '@/lib/api';
@@ -11,18 +12,37 @@ import ErrorMessage from '@/components/ErrorMessage';
 import EmptyState from '@/components/EmptyState';
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { ready, authenticated } = usePrivy();
   const { wallets } = useWallets();
   const { isAuthenticated, user } = useAuthStore();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [checkingGoogle, setCheckingGoogle] = useState(true);
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     if (authenticated) {
       fetchMyEvents();
+      checkGoogleConnection();
+      
+      // Check for success/error query params
+      if (searchParams.get('google_connected') === 'true') {
+        setSuccessMessage('Google Calendar connected successfully!');
+        // Clear the query param
+        router.replace('/dashboard');
+      }
+      if (searchParams.get('google_error') === 'true') {
+        setError('Failed to connect Google Calendar. Please try again.');
+        // Clear the query param
+        router.replace('/dashboard');
+      }
     }
-  }, [authenticated]);
+  }, [authenticated, searchParams]);
 
   const fetchMyEvents = async () => {
     try {
@@ -34,6 +54,42 @@ export default function DashboardPage() {
       setError(err.response?.data?.error?.message || 'Failed to load events');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkGoogleConnection = async () => {
+    try {
+      setCheckingGoogle(true);
+      const response = await apiClient.isGoogleCalendarConnected();
+      setIsGoogleConnected(response.data.isGoogleCalendarAdded || false);
+    } catch (err) {
+      console.error('Failed to check Google Calendar connection:', err);
+      setIsGoogleConnected(false);
+    } finally {
+      setCheckingGoogle(false);
+    }
+  };
+
+  const handleConnectGoogle = async () => {
+    try {
+      setConnectingGoogle(true);
+      setError(null);
+      const response = await apiClient.connectGoogle();
+      
+      if (response.data.isAlreadyConnected) {
+        setSuccessMessage('Google Calendar is already connected!');
+        setIsGoogleConnected(true);
+        setConnectingGoogle(false);
+        return;
+      }
+      
+      // Redirect to Google OAuth
+      if (response.data.authUrl) {
+        window.location.href = response.data.authUrl;
+      }
+    } catch (err) {
+      setError(err.response?.data?.error?.message || 'Failed to connect Google Calendar');
+      setConnectingGoogle(false);
     }
   };
 
@@ -77,6 +133,68 @@ export default function DashboardPage() {
           Manage your events and track revenue
         </p>
       </div>
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-green-600">✓</span>
+              <p className="text-sm text-green-800">
+                <strong>{successMessage}</strong>
+              </p>
+            </div>
+            <button
+              onClick={() => setSuccessMessage(null)}
+              className="text-green-600 hover:text-green-800"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Google Calendar Connection Banner */}
+      {!checkingGoogle && !isGoogleConnected && (
+        <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="font-semibold text-yellow-900 mb-1">
+                📅 Connect Google Calendar
+              </h3>
+              <p className="text-sm text-yellow-800">
+                Connect your Google account to automatically create calendar events and add attendees when they purchase tickets. This is required to create events.
+              </p>
+            </div>
+            <button
+              onClick={handleConnectGoogle}
+              disabled={connectingGoogle}
+              className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-6 text-sm font-medium text-white shadow transition-colors hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
+            >
+              {connectingGoogle ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  <span className="ml-2">Connecting...</span>
+                </>
+              ) : (
+                'Connect Google Calendar'
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Google Calendar Connected Success */}
+      {!checkingGoogle && isGoogleConnected && (
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
+          <div className="flex items-center gap-2">
+            <span className="text-green-600">✓</span>
+            <p className="text-sm text-green-800">
+              <strong>Google Calendar connected.</strong> Attendees will automatically be added to your calendar events when they purchase tickets.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Create Event Button */}
       <div className="mb-8">
