@@ -6,10 +6,8 @@ const {
   login,
   getProfile,
   updateProfile,
-  getGoogleAuthUrl,
-  handleGoogleCallback,
-  disconnectGoogle
 } = require('../controllers/userController');
+const { connectGoogleCalendar, handleGoogleCallback, isGoogleCalendarConnected } = require('../calendar/gCalendar');
 
 /**
  * POST /api/auth/register
@@ -44,21 +42,23 @@ router.put('/me', authenticate, updateProfile);
  * Get Google OAuth authorization URL
  * Authentication required
  */
-router.get('/connect-google', authenticate, getGoogleAuthUrl);
+router.get('/connect-google', authenticate, connectGoogleCalendar);
 
 /**
- * POST /api/users/google-callback
+ * GET /api/users/google-callback
  * Handle Google OAuth callback
  * Authentication required
  */
-router.post('/google-callback', authenticate, handleGoogleCallback);
+router.get('/google-callback', authenticate, handleGoogleCallback);
 
-/**
- * POST /api/users/disconnect-google
- * Disconnect Google Calendar
- * Authentication required
- */
-router.post('/disconnect-google', authenticate, disconnectGoogle);
+// /**
+//  * POST /api/users/disconnect-google
+//  * Disconnect Google Calendar
+//  * Authentication required
+//  */
+// router.post('/disconnect-google', authenticate, disconnectGoogle);
+
+router.get('/is-google-calendar-connected', authenticate, isGoogleCalendarConnected);
 
 module.exports = router;
 
