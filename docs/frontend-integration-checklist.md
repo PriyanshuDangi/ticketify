@@ -103,18 +103,26 @@
 
 ---
 
-### 5. Google Calendar OAuth
+### 5. Google Calendar OAuth ✅ COMPLETED
 
 **Add**:
-- Create `client/app/google-callback/page.jsx`
-- Handle OAuth code parameter
-- Call backend API with code
-- Redirect to dashboard on success
+- ✅ Create `client/app/google-callback/page.jsx` - NEW FILE CREATED
+- ✅ Handle OAuth code parameter - IMPLEMENTED
+- ✅ Call backend API with code - IMPLEMENTED
+- ✅ Redirect to dashboard on success - IMPLEMENTED
+
+**Backend Updates**:
+- ✅ Updated `server/calendar/gCalendar.js` - Return JSON instead of redirect
+- ✅ Fixed response format: `data.authUrl` structure
+- ✅ Updated `server/env.template` - New redirect URI documented
 
 **Fix Response Path**:
-- `response.data.isGoogleCalendarAdded` → `response.data.data.isConnected` ✅ (Fixed)
+- ✅ `response.data.isGoogleCalendarAdded` → `response.data.data.isConnected` (Already Fixed)
 
-**Reference**: @api-spec.md - Users API (lines 137-203)
+**⚠️ IMPORTANT**: Update `.env` file: `GOOGLE_REDIRECT_URI=http://localhost:3000/google-callback`
+
+**Reference**: @api-spec.md - Users API (lines 137-203)  
+**See**: @step5-implementation-summary.md for complete details
 
 ---
 

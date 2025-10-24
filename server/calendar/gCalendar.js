@@ -49,24 +49,40 @@ const connectGoogleCalendar = async (req, res) => {
 const handleGoogleCallback = async (req, res) => {
     try {
         if (!req.query.code) {
-            throw new Error('Unable to get the query code');
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Authorization code is required'
+                }
+            });
         }
+        
         OAuth2Client.getToken(req.query.code, async (err, token) => {
             if (err) {
                 console.error('Error retrieving access token', err);
-
-                //ToDo: send error message to frontend
-
-                return res.redirect(process.env.FRONTEND_URL + '/dashboard?google_error=true');
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: 'GOOGLE_AUTH_ERROR',
+                        message: 'Invalid or expired authorization code'
+                    }
+                });
             }
+            
             OAuth2Client.setCredentials(token);
-            // console.log(token);
             const {access_token, refresh_token, expiry_date, scope, token_type} = token;
+            
             if (!access_token || !refresh_token || !expiry_date) {
-                //ToDo: If refersh token is not recieved then revoke and ask to do the auth again
-
-                throw new Error('Unable to get the tokens');
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: 'GOOGLE_AUTH_ERROR',
+                        message: 'Unable to get the tokens. Please try again.'
+                    }
+                });
             }
+            
             req.user.isGoogleCalendarAdded = true;
             req.user.googleCalendar = {
                 access_token,
@@ -77,13 +93,26 @@ const handleGoogleCallback = async (req, res) => {
             };
             await req.user.save();
 
-            //ToDo: Send that it is successfully authenticatd
-
-            return res.redirect(process.env.FRONTEND_URL + '/dashboard?google_connected=true');
+            return res.status(200).json({
+                success: true,
+                data: {
+                    user: {
+                        _id: req.user._id,
+                        isGoogleCalendarAdded: req.user.isGoogleCalendarAdded
+                    }
+                },
+                message: 'Google Calendar connected successfully'
+            });
         });
     } catch (err) {
-        console.log(err);
-        return res.redirect(process.env.FRONTEND_URL + '/dashboard?google_error=true');
+        console.error('Google callback error:', err);
+        return res.status(500).json({
+            success: false,
+            error: {
+                code: 'SERVER_ERROR',
+                message: 'Failed to connect Google Calendar. Please try again.'
+            }
+        });
     }
 }
 
