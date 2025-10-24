@@ -40,25 +40,26 @@ Ticketify uses cookie-based authentication with wallet addresses. Users connect 
 **Authentication Specifications**:
 - **Type**: Cookie-based (wallet address)
 - **Cookie Name**: `walletAddress`
-- **Expiration**: 7 days
-- **Cookie Attributes**: `path=/; max-age=604800; SameSite=Lax; Secure (in production)`
+- **Expiration**: Session-based (no expiration, removed on disconnect)
+- **Cookie Attributes**: `path=/; SameSite=Lax; Secure (in production)`
 - **CORS**: `credentials: true` required on both client and server
 
 ### Auth Flow
 
 1. User connects wallet via Privy on frontend
-2. Frontend stores wallet address in cookie: `document.cookie = 'walletAddress=0x123...; path=/; max-age=604800'`
+2. Frontend stores wallet address in cookie: `document.cookie = 'walletAddress=0x123...; path=/'`
 3. Browser automatically sends cookie with all API requests
 4. Backend reads cookie from `req.cookies.walletAddress`
 5. Backend finds or auto-creates user based on wallet address
 6. Backend attaches user to request object (`req.user`, `req.userId`, `req.walletAddress`)
-7. After 7 days, cookie expires and user must reconnect wallet
+7. When user disconnects wallet, frontend removes cookie: `document.cookie = 'walletAddress=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC'`
 
 ### Important Notes
 
+- **Session-based**: Cookie persists only while wallet is connected (no expiration time)
 - **Auto-registration**: Users are automatically created in the database when they first make an authenticated request
 - **No login endpoint needed**: Authentication happens automatically via cookies
-- **Frontend must set cookie**: After wallet connection, frontend must set the `walletAddress` cookie
+- **Simple lifecycle**: Connect wallet → Set cookie | Disconnect wallet → Remove cookie
 - **CORS credentials**: Frontend axios must have `withCredentials: true` configured
 
 ---
@@ -833,17 +834,18 @@ Public endpoint to check API status.
 
 ## Notes for Frontend Developers
 
-1. **Set cookie after wallet connection** - Store wallet address in cookie: `document.cookie = 'walletAddress=0x123...; path=/; max-age=604800'`
-2. **Enable credentials in axios** - Must set `withCredentials: true` in axios config for cookies to be sent
-3. **Handle authentication errors** - Show "Please reconnect wallet" message on 401 errors
-4. **Convert timestamps** - All timestamps are UTC, convert to user's timezone on display
-5. **PYUSD decimals** - API returns price with 2 decimals, convert to 6 decimals for blockchain
-6. **Pagination** - Always use pagination for lists to avoid performance issues
-7. **Error handling** - Display error.message to users, log error.code for debugging
-8. **Image uploads** - Use FormData for multipart/form-data requests
-9. **Retry logic** - Implement retry for network failures and 503 errors
-10. **Auto-registration** - Users are auto-created on first authenticated request, no need to call register endpoint
-11. **Cookie security** - In production, cookies should include `Secure` flag (HTTPS only)
+1. **Set cookie on wallet connect** - Store wallet address: `document.cookie = 'walletAddress=0x123...; path=/'`
+2. **Remove cookie on wallet disconnect** - Clear cookie: `document.cookie = 'walletAddress=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC'`
+3. **Enable credentials in axios** - Must set `withCredentials: true` in axios config for cookies to be sent
+4. **Handle authentication errors** - Show "Please reconnect wallet" message on 401 errors
+5. **Convert timestamps** - All timestamps are UTC, convert to user's timezone on display
+6. **PYUSD decimals** - API returns price with 2 decimals, convert to 6 decimals for blockchain
+7. **Pagination** - Always use pagination for lists to avoid performance issues
+8. **Error handling** - Display error.message to users, log error.code for debugging
+9. **Image uploads** - Use FormData for multipart/form-data requests
+10. **Retry logic** - Implement retry for network failures and 503 errors
+11. **Auto-registration** - Users are auto-created on first authenticated request, no need to call register endpoint
+12. **Cookie security** - In production, cookies should include `Secure` flag (HTTPS only)
 
 ---
 
