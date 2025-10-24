@@ -79,11 +79,18 @@ const purchaseTicket = async (req, res, next) => {
     // Check if user already purchased ticket for this event
     const existingTicket = await Ticket.findOne({
       event: eventId,
-      buyerWalletAddress: buyerWalletAddress.toLowerCase(),
-      status: { $in: ['blockchain_added', 'calendar_added'] }
+      buyerWalletAddress: buyerWalletAddress.toLowerCase()
     });
 
     if (existingTicket) {
+      if (existingTicket?.status === 'created') {
+        return res.status(200).json({
+          success: true,
+          data: {
+            ticket: existingTicket
+          }
+        });
+      }
       return res.status(400).json({
         success: false,
         error: {
@@ -202,7 +209,7 @@ const confirmTicket = async (req, res, next) => {
     try {
       const organizer = ticket.event.owner;
       await addAttendee(organizer, ticket.event.googleCalendarId, ticket.buyerEmail);
-      
+
       // Update ticket status to calendar_added
       ticket.status = 'calendar_added';
       await ticket.save();
@@ -218,25 +225,25 @@ const confirmTicket = async (req, res, next) => {
     }
 
     // Send confirmation email
-    try {
-      await sendTicketConfirmation({
-        buyerEmail: ticket.buyerEmail,
-        buyerName: req.user.name || 'Ticket Holder',
-        eventTitle: ticket.event.title,
-        eventDescription: ticket.event.description,
-        eventDateTime: ticket.event.dateTime,
-        eventDuration: ticket.event.duration,
-        meetLink: ticket.event.googleMeetLink,
-        price: ticket.priceAtPurchase,
-        organizerName: ticket.event.owner.name,
-        organizerEmail: ticket.event.owner.email,
-        transactionHash: ticket.transactionHash
-      });
-      console.log(`✅ Confirmation email sent to ${ticket.buyerEmail}`);
-    } catch (error) {
-      console.error('Failed to send confirmation email:', error);
-      // Don't fail the request if email fails - ticket is still valid
-    }
+    // try {
+    //   await sendTicketConfirmation({
+    //     buyerEmail: ticket.buyerEmail,
+    //     buyerName: req.user.name || 'Ticket Holder',
+    //     eventTitle: ticket.event.title,
+    //     eventDescription: ticket.event.description,
+    //     eventDateTime: ticket.event.dateTime,
+    //     eventDuration: ticket.event.duration,
+    //     meetLink: ticket.event.googleMeetLink,
+    //     price: ticket.priceAtPurchase,
+    //     organizerName: ticket.event.owner.name,
+    //     organizerEmail: ticket.event.owner.email,
+    //     transactionHash: ticket.transactionHash
+    //   });
+    //   console.log(`✅ Confirmation email sent to ${ticket.buyerEmail}`);
+    // } catch (error) {
+    //   console.error('Failed to send confirmation email:', error);
+    //   // Don't fail the request if email fails - ticket is still valid
+    // }
 
     // Populate event details for response
     await ticket.populate({
@@ -299,11 +306,11 @@ const getMyTickets = async (req, res, next) => {
     // Filter by event status (upcoming/past)
     let filteredTickets = tickets;
     if (status === 'upcoming') {
-      filteredTickets = tickets.filter(ticket => 
+      filteredTickets = tickets.filter(ticket =>
         ticket.event && new Date(ticket.event.dateTime) > new Date()
       );
     } else if (status === 'past') {
-      filteredTickets = tickets.filter(ticket => 
+      filteredTickets = tickets.filter(ticket =>
         ticket.event && new Date(ticket.event.dateTime) <= new Date()
       );
     }

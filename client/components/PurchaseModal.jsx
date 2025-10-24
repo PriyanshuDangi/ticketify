@@ -1,18 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import moment from 'moment';
-import { formatPYUSD, parsePYUSD } from '@/lib/contracts';
+import { 
+  formatPYUSD, 
+  parsePYUSD,
+  checkPYUSDBalance,
+  checkPYUSDAllowance,
+  approvePYUSD,
+  purchaseTicketOnChain
+} from '@/lib/contracts';
 import { apiClient } from '@/lib/api';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
 
 export default function PurchaseModal({ event, onClose, onSuccess }) {
+  const { user } = usePrivy();
+  const { wallets } = useWallets();
   const [step, setStep] = useState(1); // 1: Details, 2: Approve, 3: Purchase, 4: Success
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [txHash, setTxHash] = useState('');
+  const [ticketId, setTicketId] = useState('');
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
@@ -33,45 +45,65 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
     setError('');
 
     try {
-      // Step 1: Initiate purchase in database
-      const purchaseResponse = await apiClient.purchaseTicket(event._id, email);
-      const ticketId = purchaseResponse.data.data?.ticket?._id;
+      // Get wallet address
+      const wallet = wallets[0];
+      if (!wallet) {
+        throw new Error('No wallet connected');
+      }
+      const walletAddress = wallet.address;
 
-      // TODO: Step 2: Check PYUSD balance
-      // const balance = await checkPYUSDBalance();
-      // if (balance < event.price) {
-      //   setError('Insufficient PYUSD balance');
-      //   return;
-      // }
+      // Step 1: Initiate purchase in backend
+      setLoadingMessage('Creating ticket record...');
+      const purchaseResponse = await apiClient.purchaseTicket({
+        eventId: event._id,
+        buyerEmail: email
+      });
+      const createdTicketId = purchaseResponse.data.data?.ticket?._id;
+      setTicketId(createdTicketId);
 
-      // TODO: Step 3: Check allowance and approve if needed
-      // const allowance = await checkPYUSDAllowance();
-      // if (allowance < event.price) {
-      //   await approvePYUSD(event.price);
-      // }
+      // Step 2: Check PYUSD balance
+      setLoadingMessage('Checking PYUSD balance...');
+      const balance = await checkPYUSDBalance(walletAddress);
+      if (parseFloat(balance) < parseFloat(event.price)) {
+        throw new Error(`Insufficient PYUSD balance. You have ${balance} PYUSD but need ${event.price} PYUSD`);
+      }
+
+      // Step 3: Check allowance and approve if needed
+      setLoadingMessage('Checking PYUSD allowance...');
+      const allowance = await checkPYUSDAllowance(walletAddress);
+      if (parseFloat(allowance) < parseFloat(event.price)) {
+        setLoadingMessage('Approving PYUSD spending...');
+        await approvePYUSD(event.price);
+        setLoadingMessage('Approval confirmed!');
+      }
       
+      // Move to transaction step
       setStep(3);
+      setLoadingMessage('Waiting for wallet signature...');
 
-      // TODO: Step 4: Call smart contract purchaseTicket()
-      // const tx = await purchaseTicketOnChain(event.contractEventId);
-      // await tx.wait();
-      // const txHash = tx.hash;
+      // Step 4: Purchase ticket on blockchain
+      const { txHash: transactionHash } = await purchaseTicketOnChain(event.contractEventId);
+      setTxHash(transactionHash);
       
-      // Placeholder transaction hash
-      const placeholderTxHash = '0x' + '0'.repeat(64);
-      setTxHash(placeholderTxHash);
+      setLoadingMessage('Transaction confirmed! Adding to calendar...');
 
-      // Step 5: Confirm with backend (adds to Google Calendar, sends email)
-      await apiClient.confirmTicket(ticketId, placeholderTxHash);
+      // Step 5: Confirm with backend (adds to Google Calendar)
+      await apiClient.confirmTicket({
+        ticketId: createdTicketId,
+        transactionHash: transactionHash
+      });
 
+      setLoadingMessage('');
       setStep(4);
       
       if (onSuccess) {
         onSuccess();
       }
     } catch (err) {
+      console.error('Purchase error:', err);
       setError(err.response?.data?.error?.message || err.message || 'Purchase failed');
       setStep(2); // Go back to approval step
+      setLoadingMessage('');
     } finally {
       setLoading(false);
     }
@@ -162,11 +194,11 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
         {/* Step 2: Approve PYUSD */}
         {step === 2 && (
           <div>
-            <h2 className="text-2xl font-bold mb-4">Approve Payment</h2>
+            <h2 className="text-2xl font-bold mb-4">Confirm Purchase</h2>
             
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <p className="text-sm text-blue-800">
-                To purchase this ticket, you need to approve Ticketify to spend {event.price} PYUSD from your wallet.
+                You'll need to approve PYUSD spending and sign the transaction in your wallet.
               </p>
             </div>
 
@@ -174,10 +206,6 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
               <div className="flex justify-between text-sm">
                 <span>Ticket Price:</span>
                 <span className="font-semibold">{event.price} PYUSD</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Platform Fee (2.5%):</span>
-                <span>{(event.price * 0.025).toFixed(2)} PYUSD</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Est. Gas Fee:</span>
@@ -188,6 +216,15 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
                 <span>{event.price} PYUSD</span>
               </div>
             </div>
+
+            {loading && loadingMessage && (
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800 flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  {loadingMessage}
+                </p>
+              </div>
+            )}
 
             {error && <ErrorMessage message={error} />}
 
@@ -222,20 +259,22 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
         {step === 3 && (
           <div className="text-center py-8">
             <LoadingSpinner size="lg" />
-            <h2 className="text-xl font-bold mt-4 mb-2">Confirming Transaction</h2>
-            <p className="text-gray-600 text-sm">
-              Please wait while we verify your payment and add you to the event...
+            <h2 className="text-xl font-bold mt-4 mb-2">Processing Transaction</h2>
+            <p className="text-gray-600 text-sm mb-6">
+              {loadingMessage || 'Please wait while we process your purchase...'}
             </p>
-            <div className="mt-6 space-y-2 text-sm text-left bg-gray-50 rounded-lg p-4">
-              <p className="flex items-center gap-2">
-                <span className="text-green-600">✓</span>
-                Blockchain payment confirmed
-              </p>
-              <p className="flex items-center gap-2">
-                <LoadingSpinner size="sm" />
-                Adding to Google Calendar...
-              </p>
-            </div>
+            {txHash && (
+              <div className="mt-6 space-y-2 text-sm text-left bg-gray-50 rounded-lg p-4">
+                <p className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span>
+                  Blockchain payment confirmed
+                </p>
+                <p className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  Adding to Google Calendar...
+                </p>
+              </div>
+            )}
           </div>
         )}
 

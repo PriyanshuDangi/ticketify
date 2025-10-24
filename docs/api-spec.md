@@ -530,7 +530,7 @@ image: <file> (optional)
 
 ### POST /api/tickets/purchase
 
-**Description**: Initiate ticket purchase (creates ticket with 'created' status).
+**Description**: Initiate ticket purchase (creates ticket with 'created' status). If the user already has a ticket in 'created' status for this event, returns the existing ticket.
 
 **Authentication**: Required
 
@@ -542,7 +542,7 @@ image: <file> (optional)
 }
 ```
 
-**Response** (201):
+**Response** (201 - New Ticket):
 ```json
 {
   "success": true,
@@ -560,8 +560,31 @@ image: <file> (optional)
 }
 ```
 
+**Response** (200 - Existing Ticket):
+```json
+{
+  "success": true,
+  "data": {
+    "ticket": {
+      "_id": "652fac5d4e3f6a7b8c9d0e1f",
+      "event": "652f9b4c3d2e5f6a7b8c9d0e",
+      "buyerWalletAddress": "0x123...",
+      "buyerEmail": "buyer@example.com",
+      "status": "created",
+      "createdAt": "2025-10-21T16:00:00.000Z"
+    }
+  }
+}
+```
+
+**Business Rules**:
+- If user already has a ticket with status 'created', returns existing ticket (allows retry)
+- If user already has a ticket with status 'blockchain_added' or 'calendar_added', returns error
+- Checks if event is active, not started, and not sold out
+- Only one ticket per wallet address per event
+
 **Errors**:
-- `400`: Event sold out, event has started, or user already purchased
+- `400`: Event sold out, event has started, event not active, or user already purchased (with confirmed status)
 - `401`: Unauthorized
 - `404`: Event not found
 
@@ -569,7 +592,7 @@ image: <file> (optional)
 
 ### POST /api/tickets/confirm
 
-**Description**: Confirm blockchain transaction and add to Google Calendar.
+**Description**: Confirm blockchain transaction and add to Google Calendar. This endpoint verifies the ticket belongs to the requesting user, stores the transaction hash, and adds the buyer to the Google Calendar event.
 
 **Authentication**: Required
 
@@ -582,11 +605,12 @@ image: <file> (optional)
 ```
 
 **Processing Steps**:
-1. Verify transaction on blockchain
-2. Update ticket status to 'blockchain_added'
-3. Add buyer to Google Calendar event
-4. Update ticket status to 'calendar_added'
-5. Send confirmation email
+1. Verify ticket belongs to requesting user
+2. Check transaction hash is not already used
+3. Update ticket status to 'blockchain_added' and save transaction hash
+4. Add buyer to Google Calendar event
+5. Update ticket status to 'calendar_added'
+6. Send confirmation email (currently not implemented)
 
 **Response** (200):
 ```json
@@ -615,8 +639,9 @@ image: <file> (optional)
 ```
 
 **Errors**:
-- `400`: Invalid transaction, transaction already used, or ticket not found
+- `400`: Invalid transaction or duplicate transaction hash
 - `401`: Unauthorized
+- `403`: Ticket does not belong to requesting user
 - `404`: Ticket not found
 - `500`: Failed to add to Google Calendar
 
@@ -755,9 +780,11 @@ All errors follow this format:
 | `NOT_FOUND` | Resource not found | 404 |
 | `VALIDATION_ERROR` | Invalid request data | 400 |
 | `DUPLICATE_ERROR` | Resource already exists | 409 |
+| `EVENT_NOT_ACTIVE` | Event is not active or has been deleted | 400 |
 | `EVENT_SOLD_OUT` | No tickets available | 400 |
 | `EVENT_STARTED` | Event has already started | 400 |
-| `ALREADY_PURCHASED` | User already bought ticket | 400 |
+| `ALREADY_PURCHASED` | User already bought ticket (with confirmed status) | 400 |
+| `DUPLICATE_TRANSACTION` | Transaction hash already used for another ticket | 400 |
 | `CANNOT_EDIT` | Cannot edit field after tickets sold | 400 |
 | `CANNOT_DELETE` | Cannot delete event with tickets | 400 |
 | `ALREADY_SET` | Contract ID already set for event | 400 |

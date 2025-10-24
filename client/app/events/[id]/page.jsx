@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
+import PurchaseModal from '@/components/PurchaseModal';
 
 export default function EventDetailsPage() {
   const params = useParams();
@@ -15,6 +16,7 @@ export default function EventDetailsPage() {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   
   useEffect(() => {
     if (params.id) {
@@ -40,8 +42,12 @@ export default function EventDetailsPage() {
       alert('Please connect your wallet first');
       return;
     }
-    // Will implement purchase modal in step 4.7
-    alert('Purchase modal coming soon!');
+    setShowPurchaseModal(true);
+  };
+
+  const handlePurchaseSuccess = () => {
+    setShowPurchaseModal(false);
+    fetchEvent(); // Refresh event data to show updated ticket count
   };
 
   if (loading) {
@@ -236,6 +242,15 @@ export default function EventDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Purchase Modal */}
+      {showPurchaseModal && (
+        <PurchaseModal
+          event={event}
+          onClose={() => setShowPurchaseModal(false)}
+          onSuccess={handlePurchaseSuccess}
+        />
+      )}
     </div>
   );
 }
