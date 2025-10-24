@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [false, 'Email is required'],
       unique: true,
       trim: true,
       lowercase: true,
@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
     },
     name: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [false, 'Name is required'],
       trim: true,
       minlength: [2, 'Name must be at least 2 characters'],
       maxlength: [100, 'Name cannot exceed 100 characters']
@@ -59,7 +59,7 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes
-userSchema.index({ email: 1 });
+// userSchema.index({ email: 1 });
 userSchema.index({ walletAddress: 1 });
 userSchema.index({ createdAt: -1 });
 

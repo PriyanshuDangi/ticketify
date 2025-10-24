@@ -30,7 +30,7 @@ const verifyWalletSignature = (walletAddress, signature, message) => {
   try {
     // Recover the address from the signature
     const recoveredAddress = ethers.verifyMessage(message, signature);
-    
+
     // Compare addresses (case-insensitive)
     return recoveredAddress.toLowerCase() === walletAddress.toLowerCase();
   } catch (error) {
@@ -43,78 +43,111 @@ const verifyWalletSignature = (walletAddress, signature, message) => {
  * Middleware to authenticate requests using Bearer token
  * Verifies JWT token and attaches user to request object
  */
+// const authenticate = async (req, res, next) => {
+//   try {
+//     // Get token from Authorization header
+//     const authHeader = req.headers.authorization;
+
+//     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+//       return res.status(401).json({
+//         success: false,
+//         error: {
+//           code: 'UNAUTHORIZED',
+//           message: 'No authentication token provided'
+//         }
+//       });
+//     }
+
+//     // Extract token
+//     const token = authHeader.split(' ')[1];
+
+//     if (!token) {
+//       return res.status(401).json({
+//         success: false,
+//         error: {
+//           code: 'UNAUTHORIZED',
+//           message: 'Invalid token format'
+//         }
+//       });
+//     }
+
+//     // Verify token
+//     let decoded;
+//     try {
+//       decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     } catch (error) {
+//       if (error.name === 'TokenExpiredError') {
+//         return res.status(401).json({
+//           success: false,
+//           error: {
+//             code: 'TOKEN_EXPIRED',
+//             message: 'Token expired, please reconnect wallet'
+//           }
+//         });
+//       }
+
+//       return res.status(403).json({
+//         success: false,
+//         error: {
+//           code: 'FORBIDDEN',
+//           message: 'Invalid authentication token'
+//         }
+//       });
+//     }
+
+//     // Find user by ID from token
+//     const user = await User.findById(decoded.userId);
+
+//     if (!user) {
+//       return res.status(404).json({
+//         success: false,
+//         error: {
+//           code: 'NOT_FOUND',
+//           message: 'User not found'
+//         }
+//       });
+//     }
+
+//     // Attach user to request object
+//     req.user = user;
+//     req.userId = user._id;
+//     req.walletAddress = user.walletAddress;
+
+//     next();
+//   } catch (error) {
+//     console.error('Authentication error:', error);
+//     return res.status(500).json({
+//       success: false,
+//       error: {
+//         code: 'SERVER_ERROR',
+//         message: 'Authentication failed'
+//       }
+//     });
+//   }
+// };
+
 const authenticate = async (req, res, next) => {
   try {
-    // Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const address = req.cookies.walletAddress;
+    if (!address) {
       return res.status(401).json({
         success: false,
         error: {
           code: 'UNAUTHORIZED',
-          message: 'No authentication token provided'
+          message: 'No wallet address provided'
         }
       });
     }
-
-    // Extract token
-    const token = authHeader.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Invalid token format'
-        }
-      });
-    }
-
-    // Verify token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        return res.status(401).json({
-          success: false,
-          error: {
-            code: 'TOKEN_EXPIRED',
-            message: 'Token expired, please reconnect wallet'
-          }
-        });
-      }
-      
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Invalid authentication token'
-        }
-      });
-    }
-
-    // Find user by ID from token
-    const user = await User.findById(decoded.userId);
-
+    let user = await User.findOne({ walletAddress: address });
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'User not found'
-        }
-      });
+      user = await User.create({ walletAddress: address });
     }
-
-    // Attach user to request object
     req.user = user;
     req.userId = user._id;
     req.walletAddress = user.walletAddress;
-
     next();
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Authentication error:', error);
     return res.status(500).json({
       success: false,
@@ -132,31 +165,25 @@ const authenticate = async (req, res, next) => {
  */
 const optionalAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      // No token provided, continue without user
+
+    const address = req.cookies.walletAddress;
+    if (!address) {
       return next();
     }
-
-    const token = authHeader.split(' ')[1];
-
-    if (!token) {
-      return next();
-    }
-
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.userId);
-      
-      if (user) {
+
+      let user = await User.findOne({ walletAddress: address });
+
+      if (!user) {
+        return next();
+      }
+
         req.user = user;
         req.userId = user._id;
         req.walletAddress = user.walletAddress;
-      }
     } catch (error) {
       // Token invalid or expired, continue without user
-      console.log('Optional auth: Invalid token');
+      console.log('Optional auth: User not found');
     }
 
     next();

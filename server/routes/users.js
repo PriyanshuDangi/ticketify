@@ -14,14 +14,14 @@ const { connectGoogleCalendar, handleGoogleCallback, isGoogleCalendarConnected }
  * Register new user
  * No authentication required
  */
-router.post('/auth/register', register);
+// router.post('/auth/register', register);
 
 /**
  * POST /api/auth/login
  * Login with wallet signature
  * No authentication required
  */
-router.post('/auth/login', login);
+// router.post('/auth/login', login);
 
 /**
  * GET /api/users/me
