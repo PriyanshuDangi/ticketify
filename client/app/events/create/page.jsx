@@ -7,7 +7,7 @@ import moment from 'moment';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useAuthStore } from '@/store/authStore';
 import { apiClient } from '@/lib/api';
-import { parsePYUSD } from '@/lib/contracts';
+import { createEventOnChain } from '@/lib/contracts';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 
@@ -15,7 +15,7 @@ export default function CreateEventPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
   const { wallets } = useWallets();
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Date/Time, 3: Pricing, 4: Review
   const [loading, setLoading] = useState(false);
@@ -50,7 +50,8 @@ export default function CreateEventPage() {
         try {
           setCheckingGoogle(true);
           const response = await apiClient.isGoogleCalendarConnected();
-          setIsGoogleConnected(response.data.isGoogleCalendarAdded || false);
+          // Backend returns: { success: true, isConnected: true, isGoogleCalendarAdded: true }
+          setIsGoogleConnected(response.data.isConnected || response.data.isGoogleCalendarAdded || false);
         } catch (err) {
           console.error('Failed to check Google Calendar connection:', err);
           setIsGoogleConnected(false);
@@ -176,7 +177,8 @@ export default function CreateEventPage() {
     setError('');
 
     try {
-      // Create FormData for multipart/form-data
+      // Step 1: Create event in backend (draft mode)
+      setError('Creating event in backend...');
       const submitData = new FormData();
       submitData.append('title', formData.title);
       submitData.append('description', formData.description);
@@ -189,25 +191,26 @@ export default function CreateEventPage() {
         submitData.append('image', formData.image);
       }
 
-      // TODO: Call smart contract to create event on-chain first
-      // const contractEventId = await createEventOnChain(
-      //   parsePYUSD(formData.price),
-      //   formData.maxAttendees,
-      //   Math.floor(moment(formData.dateTime).unix())
-      // );
-      
-      // Placeholder contract event ID
-      const contractEventId = Math.floor(Math.random() * 1000000).toString();
-      submitData.append('contractEventId', contractEventId);
-
-      // Create event in backend (this also creates Google Calendar event)
       const response = await apiClient.createEvent(submitData);
-      const newEvent = response.data.event;
+      const draftEvent = response.data.data.event;
+
+      // Step 2: Create event on blockchain
+      setError('Creating event on blockchain (please confirm in wallet)...');
+      const { eventId: contractEventId } = await createEventOnChain(
+        parseFloat(formData.price),
+        parseInt(formData.maxAttendees),
+        Math.floor(moment(formData.dateTime).unix())
+      );
+
+      // Step 3: Update backend with blockchain ID (activates event)
+      setError('Activating event...');
+      await apiClient.updateEventContractId(draftEvent._id, contractEventId);
 
       // Success - redirect to event page
-      router.push(`/events/${newEvent._id}`);
+      router.push(`/events/${draftEvent._id}`);
     } catch (err) {
-      setError(err.response?.data?.error?.message || err.message || 'Failed to create event');
+      const errorMessage = err.response?.data?.error?.message || err.message || 'Failed to create event';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

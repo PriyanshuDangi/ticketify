@@ -164,7 +164,7 @@ blockchainToBackend(price) // divide by 1,000,000
 - [x] `client/store/authStore.js` - Remove tokens
 - [x] `client/components/AuthSync.jsx` - Create cookie sync component
 - [x] `client/components/Providers.jsx` - Add AuthSync component
-- [ ] `client/app/events/create/page.jsx` - 3-step flow
+- [x] `client/app/events/create/page.jsx` - 3-step flow
 - [ ] All API handlers - Update response structure
 
 ### Priority 2 (Important)

@@ -61,8 +61,8 @@ const createEvent = async (req, res, next) => {
       duration,
       price,
       maxAttendees,
-      googleCalendarId: calendarData.data.hangoutLink,
-      googleMeetLink: calendarData.data.id,
+      googleCalendarId: calendarData.data.id,
+      googleMeetLink: calendarData.data.hangoutLink,
       isActive: true
     });
 
