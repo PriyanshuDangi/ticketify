@@ -2,8 +2,8 @@
 
 **Version**: 1.0  
 **Base URL**: `http://localhost:5000` (development) | `https://api.ticketify.xyz` (production)  
-**Authentication**: Bearer Token (JWT)  
-**Last Updated**: October 21, 2025
+**Authentication**: Cookie-based (wallet address)  
+**Last Updated**: October 24, 2025
 
 ---
 
@@ -13,7 +13,7 @@ This document defines all REST API endpoints, request/response formats, authenti
 
 **Key Specifications**:
 - **Format**: JSON
-- **Authentication**: Bearer Token in `Authorization` header
+- **Authentication**: Cookie-based using wallet address
 - **Pagination**: Page-based (default: page=1, limit=20)
 - **Timestamps**: All timestamps in UTC, convert to local timezone on client
 - **Rate Limiting**: Not implemented in MVP
@@ -35,96 +35,31 @@ This document defines all REST API endpoints, request/response formats, authenti
 
 ### Overview
 
-Ticketify uses JWT (JSON Web Token) for authentication. Users must connect their wallet and sign a message to receive a token.
+Ticketify uses cookie-based authentication with wallet addresses. Users connect their wallet via Privy, and the wallet address is stored in a secure cookie.
 
-**Token Specifications**:
-- **Type**: JWT (JSON Web Token)
+**Authentication Specifications**:
+- **Type**: Cookie-based (wallet address)
+- **Cookie Name**: `walletAddress`
 - **Expiration**: 7 days
-- **Refresh**: No refresh token (user must reconnect wallet after expiry)
-- **Header Format**: `Authorization: Bearer <token>`
+- **Cookie Attributes**: `path=/; max-age=604800; SameSite=Lax; Secure (in production)`
+- **CORS**: `credentials: true` required on both client and server
 
 ### Auth Flow
 
-1. User connects wallet via Privy
-2. Frontend requests signature from wallet
-3. Frontend sends signed message to `/api/auth/login`
-4. Backend verifies signature and returns JWT
-5. Frontend stores JWT and includes in all subsequent requests
-6. After 7 days, token expires and user must re-authenticate
+1. User connects wallet via Privy on frontend
+2. Frontend stores wallet address in cookie: `document.cookie = 'walletAddress=0x123...; path=/; max-age=604800'`
+3. Browser automatically sends cookie with all API requests
+4. Backend reads cookie from `req.cookies.walletAddress`
+5. Backend finds or auto-creates user based on wallet address
+6. Backend attaches user to request object (`req.user`, `req.userId`, `req.walletAddress`)
+7. After 7 days, cookie expires and user must reconnect wallet
 
-### POST /api/auth/login
+### Important Notes
 
-**Description**: Authenticate user with wallet signature and receive JWT token.
-
-**Request**:
-```json
-{
-  "walletAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-  "signature": "0x...",
-  "message": "Sign this message to authenticate with Ticketify: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-  "timestamp": 1729525200000
-}
-```
-
-**Response** (201):
-```json
-{
-  "success": true,
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "_id": "652f8a3b2c1d4e5f6a7b8c9d",
-      "walletAddress": "0x742d35cc6634c0532925a3b844bc9e7595f0beb",
-      "email": "user@example.com",
-      "name": "John Doe",
-      "isGoogleCalendarAdded": true
-    }
-  },
-  "message": "Authentication successful"
-}
-```
-
-**Errors**:
-- `400`: Invalid signature or missing fields
-- `401`: Signature verification failed
-- `404`: User not found (auto-creates on first login)
-
----
-
-### POST /api/auth/register
-
-**Description**: Register new user (called automatically on first login).
-
-**Request**:
-```json
-{
-  "walletAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-  "email": "user@example.com",
-  "name": "John Doe"
-}
-```
-
-**Response** (201):
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "_id": "652f8a3b2c1d4e5f6a7b8c9d",
-      "walletAddress": "0x742d35cc6634c0532925a3b844bc9e7595f0beb",
-      "email": "user@example.com",
-      "name": "John Doe",
-      "isGoogleCalendarAdded": false,
-      "createdAt": "2025-10-21T10:00:00.000Z"
-    }
-  },
-  "message": "User registered successfully"
-}
-```
-
-**Errors**:
-- `400`: Validation error or wallet/email already exists
-- `409`: User already exists
+- **Auto-registration**: Users are automatically created in the database when they first make an authenticated request
+- **No login endpoint needed**: Authentication happens automatically via cookies
+- **Frontend must set cookie**: After wallet connection, frontend must set the `walletAddress` cookie
+- **CORS credentials**: Frontend axios must have `withCredentials: true` configured
 
 ---
 
@@ -134,12 +69,7 @@ Ticketify uses JWT (JSON Web Token) for authentication. Users must connect their
 
 **Description**: Get current authenticated user's profile.
 
-**Authentication**: Required
-
-**Request Headers**:
-```
-Authorization: Bearer <token>
-```
+**Authentication**: Required (via cookie)
 
 **Response** (200):
 ```json
@@ -160,8 +90,8 @@ Authorization: Bearer <token>
 ```
 
 **Errors**:
-- `401`: No token or invalid token
-- `404`: User not found
+- `401`: No wallet address cookie provided
+- `404`: User not found (auto-creates if cookie is valid)
 
 ---
 
@@ -222,18 +152,14 @@ Authorization: Bearer <token>
 
 ---
 
-### POST /api/users/google-callback
+### GET /api/users/google-callback
 
 **Description**: Handle Google OAuth callback and store tokens.
 
-**Authentication**: Required
+**Authentication**: Required (via cookie)
 
-**Request**:
-```json
-{
-  "code": "4/0AZEOvh..."
-}
-```
+**Query Parameters**:
+- `code` - Google OAuth authorization code
 
 **Response** (200):
 ```json
@@ -251,6 +177,27 @@ Authorization: Bearer <token>
 
 **Errors**:
 - `400`: Invalid or expired code
+- `401`: Unauthorized
+
+---
+
+### GET /api/users/is-google-calendar-connected
+
+**Description**: Check if user has Google Calendar connected.
+
+**Authentication**: Required (via cookie)
+
+**Response** (200):
+```json
+{
+  "success": true,
+  "data": {
+    "isConnected": true
+  }
+}
+```
+
+**Errors**:
 - `401`: Unauthorized
 
 ---
@@ -744,8 +691,7 @@ All errors follow this format:
 
 | Code | Description | HTTP Status |
 |------|-------------|-------------|
-| `UNAUTHORIZED` | No token or invalid token | 401 |
-| `TOKEN_EXPIRED` | JWT token has expired | 401 |
+| `UNAUTHORIZED` | No wallet address cookie provided | 401 |
 | `FORBIDDEN` | User doesn't have permission | 403 |
 | `NOT_FOUND` | Resource not found | 404 |
 | `VALIDATION_ERROR` | Invalid request data | 400 |
@@ -767,8 +713,8 @@ All errors follow this format:
 {
   "success": false,
   "error": {
-    "code": "TOKEN_EXPIRED",
-    "message": "Token expired, please reconnect wallet"
+    "code": "UNAUTHORIZED",
+    "message": "No wallet address provided"
   }
 }
 ```
@@ -821,8 +767,8 @@ All errors follow this format:
 | `200` | OK | Successful GET, PUT, DELETE |
 | `201` | Created | Successful POST (resource created) |
 | `400` | Bad Request | Validation error, business logic error |
-| `401` | Unauthorized | No token, invalid token, or expired token |
-| `403` | Forbidden | Valid token but insufficient permissions |
+| `401` | Unauthorized | No wallet address cookie provided |
+| `403` | Forbidden | Valid authentication but insufficient permissions |
 | `404` | Not Found | Resource doesn't exist |
 | `409` | Conflict | Duplicate resource (email, wallet already exists) |
 | `413` | Payload Too Large | File upload exceeds 8MB limit |
@@ -847,16 +793,19 @@ Future implementation will include:
 ### Common Request Headers
 
 ```
-Authorization: Bearer <jwt_token>
 Content-Type: application/json
 Accept: application/json
+Cookie: walletAddress=0x123...
 ```
+
+**Note**: Cookies are automatically sent by the browser. No manual header setup needed for authentication.
 
 ### Common Response Headers
 
 ```
 Content-Type: application/json
 X-Request-ID: <unique_request_id>
+Set-Cookie: walletAddress=... (only set by frontend)
 ```
 
 ---
@@ -884,14 +833,17 @@ Public endpoint to check API status.
 
 ## Notes for Frontend Developers
 
-1. **Always include Authorization header** for protected endpoints
-2. **Handle token expiry** - Show "Please reconnect wallet" message on 401 with TOKEN_EXPIRED
-3. **Convert timestamps** - All timestamps are UTC, use moment.js to convert to user's timezone
-4. **PYUSD decimals** - API returns price with 2 decimals, convert to 6 decimals for blockchain
-5. **Pagination** - Always use pagination for lists to avoid performance issues
-6. **Error handling** - Display error.message to users, log error.code for debugging
-7. **Image uploads** - Use FormData for multipart/form-data requests
-8. **Retry logic** - Implement retry for network failures and 503 errors
+1. **Set cookie after wallet connection** - Store wallet address in cookie: `document.cookie = 'walletAddress=0x123...; path=/; max-age=604800'`
+2. **Enable credentials in axios** - Must set `withCredentials: true` in axios config for cookies to be sent
+3. **Handle authentication errors** - Show "Please reconnect wallet" message on 401 errors
+4. **Convert timestamps** - All timestamps are UTC, convert to user's timezone on display
+5. **PYUSD decimals** - API returns price with 2 decimals, convert to 6 decimals for blockchain
+6. **Pagination** - Always use pagination for lists to avoid performance issues
+7. **Error handling** - Display error.message to users, log error.code for debugging
+8. **Image uploads** - Use FormData for multipart/form-data requests
+9. **Retry logic** - Implement retry for network failures and 503 errors
+10. **Auto-registration** - Users are auto-created on first authenticated request, no need to call register endpoint
+11. **Cookie security** - In production, cookies should include `Secure` flag (HTTPS only)
 
 ---
 
