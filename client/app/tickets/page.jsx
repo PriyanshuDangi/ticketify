@@ -29,7 +29,7 @@ export default function MyTicketsPage() {
       setLoading(true);
       setError(null);
       const response = await apiClient.getMyTickets();
-      setTickets(response.data.tickets || []);
+      setTickets(response.data.data?.tickets || []);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to load tickets');
     } finally {

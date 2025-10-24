@@ -23,7 +23,7 @@ export default function EventsPage() {
       setLoading(true);
       setError(null);
       const response = await apiClient.getEvents({ upcoming: true });
-      setEvents(response.data.events || []);
+      setEvents(response.data.data?.events || []);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to load events');
     } finally {

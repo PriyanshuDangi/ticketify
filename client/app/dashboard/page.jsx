@@ -49,7 +49,7 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
       const response = await apiClient.getMyEvents();
-      setEvents(response.data.events || []);
+      setEvents(response.data.data?.events || []);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to load events');
     } finally {
@@ -76,6 +76,7 @@ export default function DashboardPage() {
       setError(null);
       const response = await apiClient.connectGoogle();
       
+      // Backend returns: { success: true, isAlreadyConnected: true, authUrl: "..." }
       if (response.data.isAlreadyConnected) {
         setSuccessMessage('Google Calendar is already connected!');
         setIsGoogleConnected(true);

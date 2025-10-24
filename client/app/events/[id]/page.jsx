@@ -27,7 +27,7 @@ export default function EventDetailsPage() {
       setLoading(true);
       setError(null);
       const response = await apiClient.getEvent(params.id);
-      setEvent(response.data.event);
+      setEvent(response.data.data?.event);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to load event');
     } finally {

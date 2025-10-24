@@ -35,7 +35,7 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
     try {
       // Step 1: Initiate purchase in database
       const purchaseResponse = await apiClient.purchaseTicket(event._id, email);
-      const ticketId = purchaseResponse.data.ticket._id;
+      const ticketId = purchaseResponse.data.data?.ticket?._id;
 
       // TODO: Step 2: Check PYUSD balance
       // const balance = await checkPYUSDBalance();
