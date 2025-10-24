@@ -6,27 +6,22 @@ const useAuthStore = create(
     (set) => ({
       // State
       user: null,
-      token: null,
       isAuthenticated: false,
       wallet: null,
 
       // Actions
       setUser: (user) => set({ user }),
       
-      setToken: (token) => set({ token, isAuthenticated: !!token }),
+      setWallet: (wallet) => set({ wallet, isAuthenticated: !!wallet }),
       
-      setWallet: (wallet) => set({ wallet }),
-      
-      login: (user, token, wallet) => set({ 
+      login: (user, wallet) => set({ 
         user, 
-        token, 
         wallet,
         isAuthenticated: true 
       }),
       
       logout: () => set({ 
         user: null, 
-        token: null, 
         wallet: null,
         isAuthenticated: false 
       }),
@@ -39,7 +34,6 @@ const useAuthStore = create(
       name: 'ticketify-auth', // localStorage key
       partialize: (state) => ({
         user: state.user,
-        token: state.token,
         wallet: state.wallet,
         isAuthenticated: state.isAuthenticated,
       }),

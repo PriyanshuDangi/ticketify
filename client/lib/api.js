@@ -8,30 +8,16 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable cookies for authentication
 });
-
-// Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('authToken');
-      // Redirect to home or show reconnect wallet message
+      // Unauthorized - wallet address cookie missing or invalid
+      // Show reconnect wallet message
     }
     return Promise.reject(error);
   }
@@ -63,10 +49,9 @@ export const apiClient = {
   updateProfile: (data) => api.put('/api/users/me', data),
   connectGoogle: () => api.get('/api/users/connect-google'),
   isGoogleCalendarConnected: () => api.get('/api/users/is-google-calendar-connected'),
-  googleCallback: (data) => api.post('/api/users/google-callback', data),
-
-  // Auth
-  login: (data) => api.post('/api/auth/login', data),
-  register: (data) => api.post('/api/auth/register', data),
+  googleCallback: (code) => api.get('/api/users/google-callback', { params: { code } }),
+  
+  // Event Contract ID
+  updateEventContractId: (id, contractEventId) => api.patch(`/api/events/${id}/contract-id`, { contractEventId }),
 };
 

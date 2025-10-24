@@ -1,6 +1,7 @@
 'use client';
 
 import { PrivyProvider } from '@privy-io/react-auth';
+import AuthSync from './AuthSync';
 
 export default function Providers({ children }) {
   return (
@@ -39,6 +40,7 @@ export default function Providers({ children }) {
         },
       }}
     >
+      <AuthSync />
       {children}
     </PrivyProvider>
   );
