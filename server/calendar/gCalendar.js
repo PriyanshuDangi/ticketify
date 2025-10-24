@@ -93,8 +93,9 @@ const isGoogleCalendarConnected = async (req, res) => {
         if (user.isGoogleCalendarAdded === false) {
             return res.status(200).json({
                 success: true,
-                isGoogleCalendarAdded: false,
-                isConnected: false
+                data: {
+                    isConnected: false
+                }
             });
         }
         // ToDo:  Check is tokens revoked
@@ -117,14 +118,16 @@ const isGoogleCalendarConnected = async (req, res) => {
         //     }
         //     return res.status(200).json({
         //         success: true,
-        //         isGoogleCalendarAdded: false,
-        //         isConnected: false
+        //         data: {
+        //             isConnected: false
+        //         }
         //     });
         // }
         res.status(200).json({
             success: true,
-            isGoogleCalendarAdded: true,
-            isConnected: true
+            data: {
+                isConnected: true
+            }
         });
     } catch (err) {
         console.error(err);

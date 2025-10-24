@@ -50,8 +50,8 @@ export default function CreateEventPage() {
         try {
           setCheckingGoogle(true);
           const response = await apiClient.isGoogleCalendarConnected();
-          // Backend returns: { success: true, isConnected: true, isGoogleCalendarAdded: true }
-          setIsGoogleConnected(response.data.isConnected || response.data.isGoogleCalendarAdded || false);
+          // Backend returns: { success: true, data: { isConnected: true } }
+          setIsGoogleConnected(response.data.data.isConnected || false);
         } catch (err) {
           console.error('Failed to check Google Calendar connection:', err);
           setIsGoogleConnected(false);

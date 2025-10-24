@@ -61,7 +61,7 @@ export default function DashboardPage() {
     try {
       setCheckingGoogle(true);
       const response = await apiClient.isGoogleCalendarConnected();
-      setIsGoogleConnected(response.data.isGoogleCalendarAdded || false);
+      setIsGoogleConnected(response.data.data.isConnected || false);
     } catch (err) {
       console.error('Failed to check Google Calendar connection:', err);
       setIsGoogleConnected(false);

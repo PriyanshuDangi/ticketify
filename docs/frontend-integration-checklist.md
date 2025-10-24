@@ -112,7 +112,7 @@
 - Redirect to dashboard on success
 
 **Fix Response Path**:
-- `response.data.isGoogleCalendarAdded` → `response.data.data.isConnected`
+- `response.data.isGoogleCalendarAdded` → `response.data.data.isConnected` ✅ (Fixed)
 
 **Reference**: @api-spec.md - Users API (lines 137-203)
 

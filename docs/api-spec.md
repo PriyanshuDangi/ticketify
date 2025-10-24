@@ -314,11 +314,10 @@ image: <file> (optional, max 8MB, jpg/png/webp)
 - After setting contractEventId, event appears in public listings
 
 **Errors**:
-- `400`: Invalid contractEventId format or already set
+- `400`: Invalid contractEventId format, already set, or duplicate contractEventId
 - `401`: Unauthorized
 - `403`: Not event owner
 - `404`: Event not found
-- `409`: Duplicate contractEventId (already exists for another event)
 
 ---
 
@@ -762,7 +761,7 @@ All errors follow this format:
 | `CANNOT_EDIT` | Cannot edit field after tickets sold | 400 |
 | `CANNOT_DELETE` | Cannot delete event with tickets | 400 |
 | `ALREADY_SET` | Contract ID already set for event | 400 |
-| `DUPLICATE_CONTRACT_ID` | Contract event ID already exists | 409 |
+| `DUPLICATE_CONTRACT_ID` | Contract event ID already exists | 400 |
 | `GOOGLE_CALENDAR_ERROR` | Google Calendar API error | 500 |
 | `BLOCKCHAIN_ERROR` | Blockchain transaction error | 500 |
 | `EMAIL_ERROR` | Failed to send email | 500 |
