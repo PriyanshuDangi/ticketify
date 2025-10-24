@@ -9,7 +9,8 @@ const {
   getEventById,
   updateEvent,
   deleteEvent,
-  getMyEvents
+  getMyEvents,
+  updateContractEventId
 } = require('../controllers/eventController');
 
 /**
@@ -46,6 +47,17 @@ router.get(
   '/my-events',
   authenticate,
   getMyEvents
+);
+
+/**
+ * PATCH /api/events/:id/contract-id
+ * Update contract event ID after blockchain creation
+ * Authentication required, must be event owner
+ */
+router.patch(
+  '/:id/contract-id',
+  authenticate,
+  updateContractEventId
 );
 
 /**

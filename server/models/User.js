@@ -5,7 +5,8 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [false, 'Email is required'],
-      unique: true,
+      unique: true,     // Keep unique but allow multiple null values
+      sparse: true,
       trim: true,
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']

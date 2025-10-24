@@ -4,8 +4,9 @@ const eventSchema = new mongoose.Schema(
   {
     contractEventId: {
       type: String,
-      required: [true, 'Contract event ID is required'],
+      required: false,
       unique: true,
+      sparse: true,  // Allows multiple null values while keeping uniqueness
       index: true
     },
     owner: {
@@ -87,7 +88,7 @@ const eventSchema = new mongoose.Schema(
 );
 
 // Indexes
-eventSchema.index({ contractEventId: 1 });
+// eventSchema.index({ contractEventId: 1 });
 eventSchema.index({ owner: 1 });
 eventSchema.index({ dateTime: 1 });
 eventSchema.index({ isActive: 1, dateTime: 1 });

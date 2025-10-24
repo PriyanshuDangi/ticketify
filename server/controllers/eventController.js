@@ -8,7 +8,7 @@ const { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } = requir
  */
 const createEvent = async (req, res, next) => {
   try {
-    const { contractEventId, title, description, dateTime, duration, price, maxAttendees } = req.body;
+    const { title, description, dateTime, duration, price, maxAttendees } = req.body;
     const userId = req.userId;
 
     // Check if user has Google Calendar connected
@@ -48,9 +48,8 @@ const createEvent = async (req, res, next) => {
       });
     }
 
-    // Create event in database
+    // Create event in database (contractEventId starts as null/draft)
     const event = await Event.create({
-      contractEventId,
       owner: userId,
       title,
       description,
@@ -100,10 +99,11 @@ const getEvents = async (req, res, next) => {
     const limitNum = parseInt(limit) > 100 ? 100 : parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    // Build query
+    // Build query - only show events that are on blockchain
     const query = {
       isActive: true,
-      isDeleted: false
+      isDeleted: false,
+      contractEventId: { $ne: null }  // Only show events with blockchain confirmation
     };
 
     // Filter upcoming events
@@ -454,12 +454,92 @@ const getMyEvents = async (req, res, next) => {
   }
 };
 
+/**
+ * Update contract event ID after blockchain creation
+ * PATCH /api/events/:id/contract-id
+ */
+const updateContractEventId = async (req, res, next) => {
+  try {
+    const { contractEventId } = req.body;
+    
+    // Validate contractEventId format
+    if (!contractEventId || typeof contractEventId !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'Valid contractEventId is required'
+        }
+      });
+    }
+
+    const event = await Event.findById(req.params.id);
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Event not found'
+        }
+      });
+    }
+
+    // Check if user is the owner
+    if (event.owner.toString() !== req.userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Only event owner can update contract ID'
+        }
+      });
+    }
+
+    // Check if contractEventId already set (prevent overwrite)
+    if (event.contractEventId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'ALREADY_SET',
+          message: 'Contract ID already set for this event'
+        }
+      });
+    }
+
+    // Update contractEventId
+    event.contractEventId = contractEventId;
+    await event.save();
+
+    await event.populate('owner', 'name walletAddress');
+
+    res.status(200).json({
+      success: true,
+      data: { event },
+      message: 'Contract ID updated successfully'
+    });
+  } catch (error) {
+    // Handle duplicate contractEventId error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'DUPLICATE_CONTRACT_ID',
+          message: 'This contract event ID already exists'
+        }
+      });
+    }
+    next(error);
+  }
+};
+
 module.exports = {
   createEvent,
   getEvents,
   getEventById,
   updateEvent,
   deleteEvent,
-  getMyEvents
+  getMyEvents,
+  updateContractEventId
 };
 

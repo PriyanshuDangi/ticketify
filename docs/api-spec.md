@@ -207,7 +207,12 @@ Ticketify uses cookie-based authentication with wallet addresses. Users connect 
 
 ### POST /api/events
 
-**Description**: Create a new event (creates both blockchain event and Google Calendar event).
+**Description**: Create a new event in draft mode (Google Calendar event created, but not yet on blockchain).
+
+**Flow**: 
+1. Backend creates event with `contractEventId: null` (draft state)
+2. Frontend creates event on blockchain with user's wallet
+3. Frontend calls PATCH /api/events/:id/contract-id to activate event
 
 **Authentication**: Required  
 **Content-Type**: `multipart/form-data`
@@ -221,7 +226,6 @@ duration: 120 (minutes)
 price: 10.50 (PYUSD, max 2 decimals)
 maxAttendees: 50
 image: <file> (optional, max 8MB, jpg/png/webp)
-contractEventId: "1" (from smart contract)
 ```
 
 **Response** (201):
@@ -231,7 +235,7 @@ contractEventId: "1" (from smart contract)
   "data": {
     "event": {
       "_id": "652f9b4c3d2e5f6a7b8c9d0e",
-      "contractEventId": "1",
+      "contractEventId": null,
       "owner": {
         "_id": "652f8a3b2c1d4e5f6a7b8c9d",
         "name": "John Doe",
@@ -247,13 +251,18 @@ contractEventId: "1" (from smart contract)
       "googleCalendarId": "abc123def456",
       "googleMeetLink": "https://meet.google.com/abc-defg-hij",
       "isActive": true,
-      "createdAt": "2025-10-21T14:00:00.000Z",
-      "ticketsSold": 0
+      "createdAt": "2025-10-21T14:00:00.000Z"
     }
   },
   "message": "Event created successfully"
 }
 ```
+
+**Important Notes**:
+- Event starts in **draft mode** (contractEventId is null)
+- Event will NOT appear in public listings until contractEventId is set
+- Frontend must create event on blockchain and call PATCH endpoint to activate
+- Google Calendar event and Meet link are created immediately
 
 **Errors**:
 - `400`: Validation error (missing fields, invalid date, etc.)
@@ -263,9 +272,59 @@ contractEventId: "1" (from smart contract)
 
 ---
 
+### PATCH /api/events/:id/contract-id
+
+**Description**: Update event with blockchain contract ID to activate it (makes it public).
+
+**Authentication**: Required (must be event owner)  
+**Content-Type**: `application/json`
+
+**Request**:
+```json
+{
+  "contractEventId": "5"
+}
+```
+
+**Response** (200):
+```json
+{
+  "success": true,
+  "data": {
+    "event": {
+      "_id": "652f9b4c3d2e5f6a7b8c9d0e",
+      "contractEventId": "5",
+      "owner": {
+        "_id": "652f8a3b2c1d4e5f6a7b8c9d",
+        "name": "John Doe",
+        "walletAddress": "0x742d35cc6634c0532925a3b844bc9e7595f0beb"
+      },
+      "title": "Web3 Workshop: Building with PYUSD",
+      "updatedAt": "2025-10-21T14:05:00.000Z"
+    }
+  },
+  "message": "Contract ID updated successfully"
+}
+```
+
+**Business Rules**:
+- Only the event owner can update the contractEventId
+- contractEventId can only be set once (cannot be changed after setting)
+- contractEventId must be unique across all events
+- After setting contractEventId, event appears in public listings
+
+**Errors**:
+- `400`: Invalid contractEventId format or already set
+- `401`: Unauthorized
+- `403`: Not event owner
+- `404`: Event not found
+- `409`: Duplicate contractEventId (already exists for another event)
+
+---
+
 ### GET /api/events
 
-**Description**: Get list of active events with pagination and filtering.
+**Description**: Get list of active events with pagination and filtering. Only returns events that have been confirmed on blockchain (contractEventId is not null).
 
 **Authentication**: Optional (public endpoint)
 
@@ -702,6 +761,8 @@ All errors follow this format:
 | `ALREADY_PURCHASED` | User already bought ticket | 400 |
 | `CANNOT_EDIT` | Cannot edit field after tickets sold | 400 |
 | `CANNOT_DELETE` | Cannot delete event with tickets | 400 |
+| `ALREADY_SET` | Contract ID already set for event | 400 |
+| `DUPLICATE_CONTRACT_ID` | Contract event ID already exists | 409 |
 | `GOOGLE_CALENDAR_ERROR` | Google Calendar API error | 500 |
 | `BLOCKCHAIN_ERROR` | Blockchain transaction error | 500 |
 | `EMAIL_ERROR` | Failed to send email | 500 |
@@ -846,6 +907,52 @@ Public endpoint to check API status.
 10. **Retry logic** - Implement retry for network failures and 503 errors
 11. **Auto-registration** - Users are auto-created on first authenticated request, no need to call register endpoint
 12. **Cookie security** - In production, cookies should include `Secure` flag (HTTPS only)
+
+### Event Creation Flow (Important!)
+
+**Two-Step Process**:
+
+1. **Create in Backend** (POST /api/events):
+   - Creates event with `contractEventId: null` (draft state)
+   - Creates Google Calendar event and Meet link
+   - Returns event with MongoDB `_id`
+
+2. **Create on Blockchain** (Frontend):
+   - Use returned event data to call smart contract's `createEvent()` function
+   - User signs transaction with their wallet
+   - Wait for transaction confirmation
+   - Extract `contractEventId` from blockchain event/return value
+
+3. **Update Backend** (PATCH /api/events/:id/contract-id):
+   - Send blockchain `contractEventId` to backend
+   - Event becomes active and visible in public listings
+   - Users can now purchase tickets
+
+**Example Flow**:
+```javascript
+// Step 1: Create in backend
+const response = await api.post('/events', formData);
+const { _id, price, maxAttendees, dateTime } = response.data.event;
+
+// Step 2: Create on blockchain
+const priceInPYUSD = price * 1_000_000; // Convert to 6 decimals
+const eventTimeUnix = Math.floor(new Date(dateTime).getTime() / 1000);
+const tx = await ticketifyContract.createEvent(priceInPYUSD, maxAttendees, eventTimeUnix);
+const receipt = await tx.wait();
+const contractEventId = /* extract from receipt or logs */;
+
+// Step 3: Update backend with blockchain ID
+await api.patch(`/events/${_id}/contract-id`, { contractEventId });
+
+// Event is now live!
+```
+
+**Why This Flow?**:
+- ✅ User gets instant feedback (no waiting for blockchain)
+- ✅ If blockchain fails, event data is saved (can retry)
+- ✅ Frontend controls wallet interaction
+- ✅ Backend never needs private keys
+- ✅ Clean separation of concerns
 
 ---
 
