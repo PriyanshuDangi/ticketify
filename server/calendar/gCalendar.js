@@ -98,29 +98,29 @@ const isGoogleCalendarConnected = async (req, res) => {
             });
         }
         // ToDo:  Check is tokens revoked
-        const token = req.user.googleCalendar;
-        OAuth2Client.setCredentials(token);
-        const calendar = google.calendar({
-            version: 'v3',
-            auth: OAuth2Client,
-        });
-        try {
-            const event = await calendar.events.list({
-                calendarId: 'primary',
-                maxResults: 1,
-            });
-        } catch (err) {
-            console.log(err.response?.data);
-            if (err.response && err.response.data && err.response.data.error === 'invalid_grant') {
-                user.isGoogleCalendarAdded = false;
-                await user.save();
-            }
-            return res.status(200).json({
-                success: true,
-                isGoogleCalendarAdded: false,
-                isConnected: false
-            });
-        }
+        // const token = req.user.googleCalendar;
+        // OAuth2Client.setCredentials(token);
+        // const calendar = google.calendar({
+        //     version: 'v3',
+        //     auth: OAuth2Client,
+        // });
+        // try {
+        //     const event = await calendar.events.list({
+        //         calendarId: 'primary',
+        //         maxResults: 1,
+        //     });
+        // } catch (err) {
+        //     console.log(err.response?.data);
+        //     if (err.response && err.response.data && err.response.data.error === 'invalid_grant') {
+        //         user.isGoogleCalendarAdded = false;
+        //         await user.save();
+        //     }
+        //     return res.status(200).json({
+        //         success: true,
+        //         isGoogleCalendarAdded: false,
+        //         isConnected: false
+        //     });
+        // }
         res.status(200).json({
             success: true,
             isGoogleCalendarAdded: true,
@@ -140,11 +140,11 @@ const isGoogleCalendarConnected = async (req, res) => {
 }
 
 const createMeet = async (eventDetails, user) => {
-    const {title, description, startTime, duration, freeEvent, ticketPrice, monetize, maxUser} = eventDetails;
+    const {title, description, dateTime, duration, freeEvent, ticketPrice, monetize, maxUser} = eventDetails;
     const token = user.googleCalendar;
-    // console.log(token);
+    console.log(token);          
     OAuth2Client.setCredentials(token);
-    let eventEndTime = new Date(startTime);
+    let eventEndTime = new Date(dateTime);
 
     // ToDo: Fix this if day change
     eventEndTime.setHours(eventEndTime.getHours() + parseInt(duration / 60));
@@ -153,11 +153,11 @@ const createMeet = async (eventDetails, user) => {
         summary: title,
         description,
         start: {
-            dateTime: new Date(startTime),
+            dateTime: new Date(dateTime).toISOString(),
             timeZone: 'Asia/Kolkata',
         },
         end: {
-            dateTime: eventEndTime,
+            dateTime: eventEndTime.toISOString(),
             timeZone: 'Asia/Kolkata',
         },
         conferenceData: {

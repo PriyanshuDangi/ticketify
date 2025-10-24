@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema(
     googleCalendar: {
       access_token: {
         type: String,
-        select: false  // Don't include in queries by default for security
+        // select: false  // Don't include in queries by default for security
       },
       scope: {
         type: String,
@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema(
       },
       refresh_token: {
         type: String,
-        select: false  // Don't include in queries by default for security
+        // select: false  // Don't include in queries by default for security
       },
       expiry_date: {
         type: Date

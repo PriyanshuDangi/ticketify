@@ -1,3 +1,4 @@
+const { createMeet } = require('../calendar/gCalendar');
 const Event = require('../models/Event');
 const Ticket = require('../models/Ticket');
 const { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } = require('../utils/googleCalendar');
@@ -31,12 +32,14 @@ const createEvent = async (req, res, next) => {
     // Create Google Calendar event with Meet link
     let calendarData;
     try {
-      calendarData = await createCalendarEvent(req.user, {
+      calendarData = await createMeet({
         title,
         description,
         dateTime,
-        duration
-      });
+        duration,
+        price,
+        maxAttendees  
+      }, req.user);
     } catch (error) {
       console.error('Failed to create Google Calendar event:', error);
       return res.status(500).json({
@@ -58,8 +61,8 @@ const createEvent = async (req, res, next) => {
       duration,
       price,
       maxAttendees,
-      googleCalendarId: calendarData.calendarId,
-      googleMeetLink: calendarData.meetLink,
+      googleCalendarId: calendarData.data.hangoutLink,
+      googleMeetLink: calendarData.data.id,
       isActive: true
     });
 
@@ -74,7 +77,14 @@ const createEvent = async (req, res, next) => {
       message: 'Event created successfully'
     });
   } catch (error) {
-    next(error);
+    console.error('Failed to create event:', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to create event'
+      }
+    });
   }
 };
 
