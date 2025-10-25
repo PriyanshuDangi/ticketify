@@ -47,10 +47,8 @@ export default function CreateEventPage() {
   useEffect(() => {
     const setupWalletProvider = async () => {
       if (wallets.length > 0) {
-        // Get the active wallet (prefer external wallets like MetaMask)
-        const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
-                            wallets.find(w => w.walletClientType) || 
-                            wallets[0];
+        // Use the first wallet - Privy orders them with the active wallet first
+        const activeWallet = wallets[0];
         
         // Get the EIP-1193 provider from the wallet
         const provider = await activeWallet.getEthereumProvider();
@@ -197,9 +195,7 @@ export default function CreateEventPage() {
     try {
       // Ensure we're using the correct wallet provider
       if (wallets.length > 0) {
-        const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
-                            wallets.find(w => w.walletClientType) || 
-                            wallets[0];
+        const activeWallet = wallets[0];
         const provider = await activeWallet.getEthereumProvider();
         setWalletProvider(provider);
       }
@@ -618,11 +614,7 @@ export default function CreateEventPage() {
         {wallets.length > 0 && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-blue-800 text-sm">
-              📝 <strong>Connected Wallet:</strong> {
-                (wallets.find(w => w.walletClientType === 'metamask') || 
-                 wallets.find(w => w.walletClientType) || 
-                 wallets[0]).address
-              }
+              📝 <strong>Connected Wallet:</strong> {wallets[0].address}
             </p>
           </div>
         )}

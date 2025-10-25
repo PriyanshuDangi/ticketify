@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useAuthStore } from '@/store/authStore';
 
+const SEPOLIA_CHAIN_ID = '0xaa36a7'; // 11155111 in hex
+
 /**
  * AuthSync Component
  * Synchronizes Privy authentication state with browser cookies and auth store.
@@ -19,11 +21,8 @@ export default function AuthSync() {
     if (!ready) return;
 
     if (authenticated && wallets.length > 0) {
-      // Find the active wallet (connected via external provider like MetaMask)
-      // Privy marks external wallets with walletClientType
-      const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
-                          wallets.find(w => w.walletClientType) || 
-                          wallets[0];
+      // Use the first wallet in the array - Privy orders them with the active wallet first
+      const activeWallet = wallets[0];
       
       const walletAddress = activeWallet.address;
 
@@ -42,6 +41,54 @@ export default function AuthSync() {
       logout();
     }
   }, [ready, authenticated, wallets, setWallet, logout]);
+
+  // Prompt user to switch to Sepolia if on wrong network
+  useEffect(() => {
+    const checkAndSwitchNetwork = async () => {
+      if (!authenticated || wallets.length === 0) return;
+      
+      const activeWallet = wallets[0];
+      
+      // Check if wallet is on Sepolia (chain ID 11155111)
+      if (activeWallet.chainId && parseInt(activeWallet.chainId) !== 11155111) {
+        try {
+          // Try to switch to Sepolia
+          const provider = await activeWallet.getEthereumProvider();
+          await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: SEPOLIA_CHAIN_ID }],
+          });
+        } catch (switchError) {
+          // If Sepolia is not added to the wallet, add it
+          if (switchError.code === 4902) {
+            try {
+              const provider = await activeWallet.getEthereumProvider();
+              await provider.request({
+                method: 'wallet_addEthereumChain',
+                params: [
+                  {
+                    chainId: SEPOLIA_CHAIN_ID,
+                    chainName: 'Sepolia Testnet',
+                    nativeCurrency: {
+                      name: 'Ethereum',
+                      symbol: 'ETH',
+                      decimals: 18,
+                    },
+                    rpcUrls: ['https://sepolia.infura.io/v3/'],
+                    blockExplorerUrls: ['https://sepolia.etherscan.io'],
+                  },
+                ],
+              });
+            } catch (addError) {
+              console.error('Error adding Sepolia network:', addError);
+            }
+          }
+        }
+      }
+    };
+
+    checkAndSwitchNetwork();
+  }, [authenticated, wallets]);
 
   // Listen for account changes in external wallets (like MetaMask)
   useEffect(() => {

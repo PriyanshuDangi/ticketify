@@ -30,10 +30,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const setupWalletProvider = async () => {
       if (wallets.length > 0) {
-        // Get the active wallet (prefer external wallets like MetaMask)
-        const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
-                            wallets.find(w => w.walletClientType) || 
-                            wallets[0];
+        // Use the first wallet - Privy orders them with the active wallet first
+        const activeWallet = wallets[0];
         
         // Get the EIP-1193 provider from the wallet
         const provider = await activeWallet.getEthereumProvider();
@@ -304,9 +302,7 @@ function EventCard({ event, onWithdrawSuccess }) {
     try {
       // Ensure we're using the correct wallet provider
       if (wallets.length > 0) {
-        const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
-                            wallets.find(w => w.walletClientType) || 
-                            wallets[0];
+        const activeWallet = wallets[0];
         const provider = await activeWallet.getEthereumProvider();
         setWalletProvider(provider);
       }
