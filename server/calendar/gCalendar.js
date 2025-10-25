@@ -9,7 +9,11 @@ const OAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_REDIRECT_URI
 );
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar'];
+const SCOPES = [
+    'https://www.googleapis.com/auth/calendar',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile'
+];
 
 const connectGoogleCalendar = async (req, res) => {
     try {
@@ -83,6 +87,28 @@ const handleGoogleCallback = async (req, res) => {
                 });
             }
             
+            // Fetch user info from Google
+            try {
+                const oauth2 = google.oauth2({
+                    auth: OAuth2Client,
+                    version: 'v2'
+                });
+                const userInfo = await oauth2.userinfo.get();
+                
+                // Update user's name and email from Google account
+                if (userInfo.data) {
+                    if (userInfo.data.email) {
+                        req.user.email = userInfo.data.email.toLowerCase();
+                    }
+                    if (userInfo.data.name) {
+                        req.user.name = userInfo.data.name;
+                    }
+                }
+            } catch (userInfoError) {
+                console.error('Error fetching Google user info:', userInfoError);
+                // Continue even if user info fetch fails
+            }
+            
             req.user.isGoogleCalendarAdded = true;
             req.user.googleCalendar = {
                 access_token,
@@ -98,6 +124,8 @@ const handleGoogleCallback = async (req, res) => {
                 data: {
                     user: {
                         _id: req.user._id,
+                        name: req.user.name,
+                        email: req.user.email,
                         isGoogleCalendarAdded: req.user.isGoogleCalendarAdded
                     }
                 },
