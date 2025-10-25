@@ -128,7 +128,9 @@ const verifyWalletSignature = (walletAddress, signature, message) => {
 
 const authenticate = async (req, res, next) => {
   try {
-    const address = req.cookies.walletAddress;
+    // Check for wallet address in header first, then fall back to cookie
+    const address = req.headers['x-wallet-address'] || req.cookies.walletAddress;
+    
     if (!address) {
       return res.status(401).json({
         success: false,
@@ -138,10 +140,12 @@ const authenticate = async (req, res, next) => {
         }
       });
     }
+    
     let user = await User.findOne({ walletAddress: address });
     if (!user) {
       user = await User.create({ walletAddress: address });
     }
+    
     req.user = user;
     req.userId = user._id;
     req.walletAddress = user.walletAddress;
@@ -165,24 +169,25 @@ const authenticate = async (req, res, next) => {
  */
 const optionalAuth = async (req, res, next) => {
   try {
-
-    const address = req.cookies.walletAddress;
+    // Check for wallet address in header first, then fall back to cookie
+    const address = req.headers['x-wallet-address'] || req.cookies.walletAddress;
+    
     if (!address) {
       return next();
     }
+    
     try {
-
       let user = await User.findOne({ walletAddress: address });
 
       if (!user) {
         return next();
       }
 
-        req.user = user;
-        req.userId = user._id;
-        req.walletAddress = user.walletAddress;
+      req.user = user;
+      req.userId = user._id;
+      req.walletAddress = user.walletAddress;
     } catch (error) {
-      // Token invalid or expired, continue without user
+      // User not found, continue without user
       console.log('Optional auth: User not found');
     }
 

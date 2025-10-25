@@ -2,21 +2,50 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+// Helper to get wallet address from localStorage
+const getWalletAddress = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const authStore = localStorage.getItem('ticketify-auth');
+    if (authStore) {
+      const parsed = JSON.parse(authStore);
+      return parsed?.state?.wallet?.address || null;
+    }
+  } catch (error) {
+    console.error('Error reading wallet address:', error);
+  }
+  return null;
+};
+
 // Create axios instance with base configuration
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Enable cookies for authentication
+  withCredentials: true, // Keep for potential future use
 });
+
+// Request interceptor to add wallet address header
+api.interceptors.request.use(
+  (config) => {
+    const walletAddress = getWalletAddress();
+    if (walletAddress) {
+      config.headers['X-Wallet-Address'] = walletAddress;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - wallet address cookie missing or invalid
+      // Unauthorized - wallet address missing or invalid
       // Show reconnect wallet message
     }
     return Promise.reject(error);
