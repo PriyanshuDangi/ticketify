@@ -9,9 +9,29 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Parse allowed origins from environment variable
+// Supports single URL or comma-separated multiple URLs
+const getAllowedOrigins = () => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  // Split by comma and trim whitespace
+  return frontendUrl.split(',').map(url => url.trim());
+};
+
+const allowedOrigins = getAllowedOrigins();
+
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`❌ Blocked CORS request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Wallet-Address'],
   exposedHeaders: ['X-Wallet-Address']
@@ -56,6 +76,7 @@ const startServer = async () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+      console.log(`🌐 Allowed CORS origins: ${allowedOrigins.join(', ')}`);
       
       // Envio HyperIndex is now handling blockchain event indexing
       console.log('✅ Using Envio HyperIndex for blockchain event indexing');
