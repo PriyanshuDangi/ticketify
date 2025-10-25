@@ -16,3 +16,7 @@ networks:
           - event: "TicketPurchased(uint256 indexed eventId, address indexed buyer, uint256 price, uint256 timestamp)"
           - event: "RevenueWithdrawn(uint256 indexed eventId, address indexed organizer, uint256 amount)"
           - event: "PlatformFeesWithdrawn(address indexed owner, uint256 amount)"
+
+field_selection:
+  transaction_fields:
+    - "hash"

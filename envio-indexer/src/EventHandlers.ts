@@ -53,7 +53,7 @@ Ticketify.EventCreated.handler(async ({ event, context }) => {
     eventTime: event.params.eventTime,
     blockNumber: BigInt(event.block.number),
     timestamp: BigInt(event.block.timestamp),
-    transactionHash: event.transaction.transactionHash.toLowerCase(),
+    transactionHash: event.transaction.hash.toLowerCase(),
   };
 
   context.Event.set(entity);
@@ -93,7 +93,7 @@ Ticketify.TicketPurchased.handler(async ({ event, context }) => {
     price: event.params.price,
     timestamp: event.params.timestamp,
     blockNumber: BigInt(event.block.number),
-    transactionHash: event.transaction.transactionHash.toLowerCase(),
+    transactionHash: event.transaction.hash.toLowerCase(),
   };
 
   context.TicketPurchase.set(entity);
@@ -132,7 +132,7 @@ Ticketify.RevenueWithdrawn.handler(async ({ event, context }) => {
     amount: event.params.amount,
     blockNumber: BigInt(event.block.number),
     timestamp: BigInt(event.block.timestamp),
-    transactionHash: event.transaction.transactionHash.toLowerCase(),
+    transactionHash: event.transaction.hash.toLowerCase(),
   };
 
   context.RevenueWithdrawal.set(entity);
@@ -168,7 +168,7 @@ Ticketify.PlatformFeesWithdrawn.handler(async ({ event, context }) => {
     amount: event.params.amount,
     blockNumber: BigInt(event.block.number),
     timestamp: BigInt(event.block.timestamp),
-    transactionHash: event.transaction.transactionHash.toLowerCase(),
+    transactionHash: event.transaction.hash.toLowerCase(),
   };
 
   context.PlatformFeeWithdrawal.set(entity);
