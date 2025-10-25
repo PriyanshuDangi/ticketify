@@ -4,7 +4,7 @@ import {
   TicketPurchase,
   RevenueWithdrawal,
   PlatformFeeWithdrawal,
-} from "../generated";
+} from "../generated/index.js";
 
 // Import fetch for Node.js environment
 import fetch from "node-fetch";
