@@ -10,7 +10,7 @@ networks:
         address:
           - 0x1Cc7FA86240F105aa1F1fa9F795f9530c881b12E
         abi_file_path: ./abis/Ticketify.json
-        handler: src/EventHandlers.ts
+        handler: ./src/EventHandlers.ts
         events:
           - event: "EventCreated(uint256 indexed eventId, address indexed organizer, uint256 price, uint256 maxAttendees, uint256 eventTime)"
           - event: "TicketPurchased(uint256 indexed eventId, address indexed buyer, uint256 price, uint256 timestamp)"
