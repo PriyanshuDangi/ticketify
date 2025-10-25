@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./utils/db');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
-const { startListening } = require('./utils/blockchainListener');
+// const { startListening } = require('./utils/blockchainListener'); // Disabled - using Envio HyperIndex
 const cookieParser = require('cookie-parser');
 
 const app = express();
@@ -34,6 +34,9 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/tickets', require('./routes/tickets'));
 
+// Webhook routes (for Envio)
+app.use('/api/webhooks', require('./routes/webhooks'));
+
 // 404 handler
 app.use(notFound);
 
@@ -51,16 +54,21 @@ const startServer = async () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+      
+      // Envio HyperIndex is now handling blockchain event indexing
+      console.log('✅ Using Envio HyperIndex for blockchain event indexing');
+      console.log(`📊 GraphQL endpoint: ${process.env.ENVIO_GRAPHQL_URL || 'http://localhost:8080/v1/graphql'}`);
+      console.log('📡 Webhook endpoint: /api/webhooks/envio');
     });
 
-    // Start blockchain event listener
-    if (process.env.SEPOLIA_RPC_URL && process.env.CONTRACT_ADDRESS) {
-      setTimeout(() => {
-        startListening();
-      }, 2000); // Wait 2 seconds after server starts
-    } else {
-      console.log('⚠️ Blockchain listener not started - missing configuration');
-    }
+    // Old blockchain listener is disabled - now using Envio HyperIndex
+    // if (process.env.SEPOLIA_RPC_URL && process.env.CONTRACT_ADDRESS) {
+    //   setTimeout(() => {
+    //     startListening();
+    //   }, 2000);
+    // } else {
+    //   console.log('⚠️ Blockchain listener not started - missing configuration');
+    // }
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
     process.exit(1);

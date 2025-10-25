@@ -175,6 +175,35 @@ const confirmTicket = async (req, res, next) => {
       });
     }
 
+    // ✅ NEW: Early return if already processed by Envio webhook
+    if (ticket.status === 'calendar_added') {
+      console.log(`✅ Ticket ${ticketId} already processed by Envio webhook`);
+      
+      // Populate event details for response
+      await ticket.populate({
+        path: 'event',
+        select: 'title dateTime duration googleMeetLink price'
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          ticket: {
+            _id: ticket._id,
+            event: ticket.event,
+            buyerWalletAddress: ticket.buyerWalletAddress,
+            buyerEmail: ticket.buyerEmail,
+            transactionHash: ticket.transactionHash,
+            status: ticket.status,
+            priceAtPurchase: ticket.priceAtPurchase,
+            createdAt: ticket.createdAt,
+            updatedAt: ticket.updatedAt
+          }
+        },
+        message: 'Ticket already confirmed and added to calendar'
+      });
+    }
+
     // Check if transaction hash already used
     const existingTicket = await Ticket.findOne({
       transactionHash: transactionHash.toLowerCase(),
