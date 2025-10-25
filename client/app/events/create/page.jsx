@@ -20,6 +20,7 @@ export default function CreateEventPage() {
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Date/Time, 3: Pricing, 4: Review
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [statusMessage, setStatusMessage] = useState(''); // For non-error status updates
   const [checkingGoogle, setCheckingGoogle] = useState(true);
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   
@@ -191,6 +192,7 @@ export default function CreateEventPage() {
     
     setLoading(true);
     setError('');
+    setStatusMessage('');
 
     try {
       // Ensure we're using the correct wallet provider
@@ -201,7 +203,7 @@ export default function CreateEventPage() {
       }
 
       // Step 1: Create event in backend (draft mode)
-      setError('Creating event in backend...');
+      setStatusMessage('Creating event in backend...');
       const submitData = new FormData();
       submitData.append('title', formData.title);
       submitData.append('description', formData.description);
@@ -218,7 +220,7 @@ export default function CreateEventPage() {
       const draftEvent = response.data.data.event;
 
       // Step 2: Create event on blockchain
-      setError('Creating event on blockchain (please confirm in wallet)...');
+      setStatusMessage('Creating event on blockchain (please confirm in wallet)...');
       const { eventId: contractEventId } = await createEventOnChain(
         parseFloat(formData.price),
         parseInt(formData.maxAttendees),
@@ -226,14 +228,16 @@ export default function CreateEventPage() {
       );
 
       // Step 3: Update backend with blockchain ID (activates event)
-      setError('Activating event...');
+      setStatusMessage('Activating event...');
       await apiClient.updateEventContractId(draftEvent._id, contractEventId);
 
       // Success - redirect to event page
+      setStatusMessage('Event created successfully! Redirecting...');
       router.push(`/events/${draftEvent._id}`);
     } catch (err) {
       const errorMessage = err.response?.data?.error?.message || err.message || 'Failed to create event';
       setError(errorMessage);
+      setStatusMessage(''); // Clear status message on error
     } finally {
       setLoading(false);
     }
@@ -327,6 +331,17 @@ export default function CreateEventPage() {
 
         {/* Form Card */}
         <div className={`bg-white rounded-lg shadow-sm p-6 mb-6 ${!isGoogleConnected && !checkingGoogle ? 'opacity-50 pointer-events-none' : ''}`}>
+          {/* Status Message (blue box) */}
+          {statusMessage && (
+            <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                <p className="text-sm text-blue-800 font-medium">{statusMessage}</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Error Message (red box) */}
           {error && (
             <div className="mb-6">
               <ErrorMessage message={error} />
