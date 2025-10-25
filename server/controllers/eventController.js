@@ -411,7 +411,8 @@ const getMyEvents = async (req, res, next) => {
 
     const query = {
       owner: req.userId,
-      isDeleted: false
+      isDeleted: false,
+      contractEventId: { $ne: null }
     };
 
     // Filter by status

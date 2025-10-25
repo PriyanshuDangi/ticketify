@@ -325,8 +325,16 @@ function EventCard({ event, onWithdrawSuccess }) {
               href={`/events/${event._id}`}
               className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
             >
-              View
+              View Event
             </Link>
+            {ticketsSold > 0 && (
+              <Link
+                href={`/events/${event._id}#attendees`}
+                className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                View Attendees ({ticketsSold})
+              </Link>
+            )}
             {ticketsSold > 0 && !event.hasWithdrawn && !withdrawSuccess && (
               <button
                 className="inline-flex h-9 items-center justify-center rounded-md bg-green-600 px-4 text-sm font-medium text-white shadow transition-colors hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed gap-2"

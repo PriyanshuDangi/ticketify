@@ -8,11 +8,12 @@ import { useAuthStore } from '@/store/authStore';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import PurchaseModal from '@/components/PurchaseModal';
+import TicketPurchasersTable from '@/components/TicketPurchasersTable';
 
 export default function EventDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, wallet } = useAuthStore();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -78,6 +79,19 @@ export default function EventDetailsPage() {
   const spotsRemaining = event.maxAttendees - (event.ticketsSold || 0);
   const isSoldOut = spotsRemaining <= 0;
   const hasStarted = eventDate.isBefore(moment());
+  
+  // Debug logging for owner check
+  console.log('🔍 Owner Check Debug:', {
+    'wallet': wallet,
+    'wallet.address': wallet?.address,
+    'event.owner': event.owner,
+    'event.owner.walletAddress': event.owner?.walletAddress,
+    'isMatch': wallet?.address && event.owner?.walletAddress && 
+      wallet.address.toLowerCase() === event.owner.walletAddress.toLowerCase()
+  });
+  
+  const isOwner = wallet?.address && event.owner?.walletAddress && 
+    wallet.address.toLowerCase() === event.owner.walletAddress.toLowerCase();
 
   return (
     <div className="container py-8">
@@ -242,6 +256,14 @@ export default function EventDetailsPage() {
           </div>
         </div>
       </div>
+
+
+      {/* Ticket Purchasers Section - Only visible to event owner */}
+      {isOwner && (
+        <div id="attendees" className="mt-12 border-t pt-8 scroll-mt-20">
+          <TicketPurchasersTable eventId={event._id} />
+        </div>
+      )}
 
       {/* Purchase Modal */}
       {showPurchaseModal && (
