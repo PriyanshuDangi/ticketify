@@ -7,8 +7,9 @@ import {
 } from "../generated";
 
 // Backend webhook URL (configure via environment variable)
-// const BACKEND_URL = process.env.BACKEND_WEBHOOK_URL || 'http://localhost:5001';
-const BACKEND_URL = 'https://ticketify-xq4o.onrender.com';
+// For hosted service: Set ENVIO_BACKEND_WEBHOOK_URL in dashboard settings
+// For local dev: Uses fallback URL
+const BACKEND_URL = process.env.ENVIO_BACKEND_WEBHOOK_URL || 'https://ticketify-xq4o.onrender.com';
 
 /**
  * Helper function to call backend webhook

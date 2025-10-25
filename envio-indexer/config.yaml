@@ -1,18 +1,18 @@
 name: ticketify-indexer
-
-contracts:
-  - name: Ticketify
-    abi_file_path: ./abis/Ticketify.json
-    handler: ./src/EventHandlers.ts
-    events:
-      - event: EventCreated(uint256 indexed eventId, address indexed organizer, uint256 price, uint256 maxAttendees, uint256 eventTime)
-      - event: TicketPurchased(uint256 indexed eventId, address indexed buyer, uint256 price, uint256 timestamp)
-      - event: RevenueWithdrawn(uint256 indexed eventId, address indexed organizer, uint256 amount)
-      - event: PlatformFeesWithdrawn(address indexed owner, uint256 amount)
+description: Real-time blockchain event indexer for Ticketify smart contract on Sepolia testnet
+ecosystem: evm
 
 networks:
   - id: 11155111
     start_block: 9465205
     contracts:
       - name: Ticketify
-        address: 0x1Cc7FA86240F105aa1F1fa9F795f9530c881b12E
+        address:
+          - 0x1Cc7FA86240F105aa1F1fa9F795f9530c881b12E
+        abi_file_path: ./abis/Ticketify.json
+        handler: src/EventHandlers.ts
+        events:
+          - event: "EventCreated(uint256 indexed eventId, address indexed organizer, uint256 price, uint256 maxAttendees, uint256 eventTime)"
+          - event: "TicketPurchased(uint256 indexed eventId, address indexed buyer, uint256 price, uint256 timestamp)"
+          - event: "RevenueWithdrawn(uint256 indexed eventId, address indexed organizer, uint256 amount)"
+          - event: "PlatformFeesWithdrawn(address indexed owner, uint256 amount)"

@@ -1,7 +1,7 @@
 {
   "name": "ticketify-indexer",
   "version": "1.0.0",
-  "description": "Envio HyperIndex for Ticketify smart contract events",
+  "description": "Envio HyperIndex for Ticketify smart contract events on Sepolia",
   "scripts": {
     "dev": "envio dev",
     "codegen": "envio codegen",
@@ -10,10 +10,14 @@
     "stop": "envio stop",
     "local": "envio local"
   },
-  "dependencies": {},
+  "dependencies": {
+    "envio": "^2.31.0"
+  },
   "devDependencies": {},
   "engines": {
-    "node": ">=16.0.0"
-  }
+    "node": ">=22.0.0",
+    "pnpm": "9.10.0"
+  },
+  "packageManager": "pnpm@9.10.0"
 }
 
