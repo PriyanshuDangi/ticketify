@@ -35,8 +35,15 @@ const createCalendarEvent = async (user, eventData) => {
           conferenceSolutionKey: {
             type: 'hangoutsMeet'
           }
+        },
+        // Allow attendees to join directly without asking
+        conferenceProperties: {
+          allowedConferenceSolutionTypes: ['hangoutsMeet']
         }
       },
+      // Set organizer as the only one who needs to admit guests = false
+      // This ensures attendees can join directly
+      anyoneCanAddSelf: false,
       guestsCanInviteOthers: false,  // Prevent attendees from inviting others
       guestsCanSeeOtherGuests: false,  // Privacy: attendees can't see each other
       guestsCanModify: false  // Attendees can't modify event
@@ -107,6 +114,7 @@ const addAttendee = async (user, calendarEventId, attendeeEmail) => {
       resource: {
         attendees: attendees
       },
+      conferenceDataVersion: 1,  // Maintain conference data and settings
       sendNotifications: true  // Send email notification to new attendee
     });
 
