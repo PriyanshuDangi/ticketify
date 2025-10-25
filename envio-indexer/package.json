@@ -1,0 +1,19 @@
+{
+  "name": "ticketify-indexer",
+  "version": "1.0.0",
+  "description": "Envio HyperIndex for Ticketify smart contract events",
+  "scripts": {
+    "dev": "envio dev",
+    "codegen": "envio codegen",
+    "start": "envio start",
+    "deploy": "envio deploy",
+    "stop": "envio stop",
+    "local": "envio local"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
+

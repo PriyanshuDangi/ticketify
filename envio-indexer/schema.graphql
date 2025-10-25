@@ -1,0 +1,41 @@
+type Event @entity {
+  id: ID!
+  contractEventId: String! @index
+  organizer: String! @index
+  price: BigInt!
+  maxAttendees: BigInt!
+  eventTime: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  transactionHash: String! @index
+}
+
+type TicketPurchase @entity {
+  id: ID!
+  eventId: String! @index
+  buyer: String! @index
+  price: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String! @index
+}
+
+type RevenueWithdrawal @entity {
+  id: ID!
+  eventId: String! @index
+  organizer: String! @index
+  amount: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  transactionHash: String! @index
+}
+
+type PlatformFeeWithdrawal @entity {
+  id: ID!
+  owner: String! @index
+  amount: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  transactionHash: String! @index
+}
+
