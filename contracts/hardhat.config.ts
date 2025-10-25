@@ -1,10 +1,11 @@
 import type { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox-viem";
+import hardhatToolboxViem from "@nomicfoundation/hardhat-toolbox-viem";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
 const config: HardhatUserConfig = {
+  plugins: [hardhatToolboxViem],
   solidity: {
     version: "0.8.28",
     settings: {
@@ -16,6 +17,7 @@ const config: HardhatUserConfig = {
   },
   networks: {
     sepolia: {
+      type: "http",
       url: process.env.SEPOLIA_RPC_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 11155111,
