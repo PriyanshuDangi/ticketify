@@ -6,6 +6,9 @@ import {
   PlatformFeeWithdrawal,
 } from "../generated";
 
+// Import fetch for Node.js environment
+import fetch from "node-fetch";
+
 // Backend webhook URL (configure via environment variable)
 // For hosted service: Set ENVIO_BACKEND_WEBHOOK_URL in dashboard settings
 // For local dev: Uses fallback URL
@@ -50,7 +53,7 @@ Ticketify.EventCreated.handler(async ({ event, context }) => {
     eventTime: event.params.eventTime,
     blockNumber: BigInt(event.block.number),
     timestamp: BigInt(event.block.timestamp),
-    transactionHash: event.transaction.hash.toLowerCase(),
+    transactionHash: event.transaction.transactionHash.toLowerCase(),
   };
 
   context.Event.set(entity);
@@ -90,7 +93,7 @@ Ticketify.TicketPurchased.handler(async ({ event, context }) => {
     price: event.params.price,
     timestamp: event.params.timestamp,
     blockNumber: BigInt(event.block.number),
-    transactionHash: event.transaction.hash.toLowerCase(),
+    transactionHash: event.transaction.transactionHash.toLowerCase(),
   };
 
   context.TicketPurchase.set(entity);
@@ -129,7 +132,7 @@ Ticketify.RevenueWithdrawn.handler(async ({ event, context }) => {
     amount: event.params.amount,
     blockNumber: BigInt(event.block.number),
     timestamp: BigInt(event.block.timestamp),
-    transactionHash: event.transaction.hash.toLowerCase(),
+    transactionHash: event.transaction.transactionHash.toLowerCase(),
   };
 
   context.RevenueWithdrawal.set(entity);
@@ -165,7 +168,7 @@ Ticketify.PlatformFeesWithdrawn.handler(async ({ event, context }) => {
     amount: event.params.amount,
     blockNumber: BigInt(event.block.number),
     timestamp: BigInt(event.block.timestamp),
-    transactionHash: event.transaction.hash.toLowerCase(),
+    transactionHash: event.transaction.transactionHash.toLowerCase(),
   };
 
   context.PlatformFeeWithdrawal.set(entity);

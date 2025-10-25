@@ -11,9 +11,12 @@
     "local": "envio local"
   },
   "dependencies": {
-    "envio": "^2.31.0"
+    "envio": "^2.31.0",
+    "node-fetch": "^2.6.7"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/node-fetch": "^2.6.2"
+  },
   "engines": {
     "node": ">=22.0.0",
     "pnpm": "9.10.0"
