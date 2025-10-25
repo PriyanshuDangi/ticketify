@@ -12,20 +12,25 @@ export default function Header() {
   const { wallets } = useWallets();
   const { setWallet, setUser, logout: storeLogout } = useAuthStore();
 
-  // Sync Privy wallet with auth store
+  // Sync Privy wallet with auth store and user info
   useEffect(() => {
     if (authenticated && wallets.length > 0) {
-      const wallet = wallets[0];
+      // Get the active wallet (external wallet like MetaMask or embedded wallet)
+      const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
+                          wallets.find(w => w.walletClientType) || 
+                          wallets[0];
+      
       setWallet({
-        address: wallet.address,
-        chainId: wallet.chainId,
+        address: activeWallet.address,
+        chainId: activeWallet.chainId,
+        walletClientType: activeWallet.walletClientType
       });
       
       if (user) {
         setUser({
           id: user.id,
           email: user.email?.address,
-          wallet: wallet.address,
+          wallet: activeWallet.address,
         });
       }
     }
@@ -95,7 +100,11 @@ export default function Header() {
             <div className="flex items-center space-x-2">
               <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-md bg-accent text-sm">
                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <span>{formatAddress(wallets[0].address)}</span>
+                <span>{formatAddress(
+                  (wallets.find(w => w.walletClientType === 'metamask') || 
+                   wallets.find(w => w.walletClientType) || 
+                   wallets[0]).address
+                )}</span>
               </div>
               <button
                 onClick={handleLogout}

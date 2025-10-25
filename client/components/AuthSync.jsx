@@ -1,31 +1,84 @@
 'use client';
 
 import { useEffect } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useAuthStore } from '@/store/authStore';
 
 /**
  * AuthSync Component
- * Synchronizes Privy authentication state with browser cookies.
- * Sets walletAddress cookie when authenticated, removes it when not.
+ * Synchronizes Privy authentication state with browser cookies and auth store.
+ * Handles active wallet tracking and account switching.
  */
 export default function AuthSync() {
-  const { ready, authenticated, user } = usePrivy();
+  const { ready, authenticated } = usePrivy();
+  const { wallets } = useWallets();
+  const { setWallet, logout } = useAuthStore();
 
   useEffect(() => {
     // Wait for Privy to be ready
     if (!ready) return;
 
-    // Get wallet address from Privy user object
-    const walletAddress = user?.wallet?.address;
+    if (authenticated && wallets.length > 0) {
+      // Find the active wallet (connected via external provider like MetaMask)
+      // Privy marks external wallets with walletClientType
+      const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
+                          wallets.find(w => w.walletClientType) || 
+                          wallets[0];
+      
+      const walletAddress = activeWallet.address;
 
-    if (authenticated && walletAddress) {
-      // Set cookie when authenticated
+      // Set cookie with current active wallet
       document.cookie = `walletAddress=${walletAddress}; path=/; SameSite=Lax`;
+      
+      // Update auth store with wallet info
+      setWallet({
+        address: walletAddress,
+        chainId: activeWallet.chainId,
+        walletClientType: activeWallet.walletClientType
+      });
     } else {
       // Remove cookie when not authenticated
       document.cookie = 'walletAddress=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC';
+      logout();
     }
-  }, [ready, authenticated, user]);
+  }, [ready, authenticated, wallets, setWallet, logout]);
+
+  // Listen for account changes in external wallets (like MetaMask)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.ethereum) return;
+
+    const handleAccountsChanged = (accounts) => {
+      if (accounts.length === 0) {
+        // User disconnected wallet
+        logout();
+        document.cookie = 'walletAddress=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC';
+      } else if (authenticated && wallets.length > 0) {
+        // User switched accounts - update if it matches one of our connected wallets
+        const newAddress = accounts[0].toLowerCase();
+        const matchingWallet = wallets.find(w => w.address.toLowerCase() === newAddress);
+        
+        if (matchingWallet) {
+          document.cookie = `walletAddress=${matchingWallet.address}; path=/; SameSite=Lax`;
+          setWallet({
+            address: matchingWallet.address,
+            chainId: matchingWallet.chainId,
+            walletClientType: matchingWallet.walletClientType
+          });
+        } else {
+          // Account not in our wallets list - require reconnection
+          console.warn('Switched to unrecognized account. Please reconnect.');
+        }
+      }
+    };
+
+    window.ethereum.on('accountsChanged', handleAccountsChanged);
+
+    return () => {
+      if (window.ethereum.removeListener) {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      }
+    };
+  }, [authenticated, wallets, setWallet, logout]);
 
   // This component doesn't render anything
   return null;

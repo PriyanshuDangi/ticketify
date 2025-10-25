@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import moment from 'moment';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { apiClient } from '@/lib/api';
-import { withdrawRevenueOnChain } from '@/lib/contracts';
+import { withdrawRevenueOnChain, setWalletProvider } from '@/lib/contracts';
 import { useAuthStore } from '@/store/authStore';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
@@ -25,6 +25,24 @@ export default function DashboardPage() {
   const [checkingGoogle, setCheckingGoogle] = useState(true);
   const [connectingGoogle, setConnectingGoogle] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
+
+  // Set up the wallet provider when wallets are available
+  useEffect(() => {
+    const setupWalletProvider = async () => {
+      if (wallets.length > 0) {
+        // Get the active wallet (prefer external wallets like MetaMask)
+        const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
+                            wallets.find(w => w.walletClientType) || 
+                            wallets[0];
+        
+        // Get the EIP-1193 provider from the wallet
+        const provider = await activeWallet.getEthereumProvider();
+        setWalletProvider(provider);
+      }
+    };
+    
+    setupWalletProvider();
+  }, [wallets]);
 
   useEffect(() => {
     if (authenticated) {
@@ -265,6 +283,7 @@ export default function DashboardPage() {
 }
 
 function EventCard({ event, onWithdrawSuccess }) {
+  const { wallets } = useWallets();
   const eventDate = moment(event.dateTime);
   const ticketsSold = event.ticketsSold || 0;
   const revenue = (event.revenue || 0).toFixed(2);
@@ -283,6 +302,15 @@ function EventCard({ event, onWithdrawSuccess }) {
     setWithdrawSuccess(false);
 
     try {
+      // Ensure we're using the correct wallet provider
+      if (wallets.length > 0) {
+        const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
+                            wallets.find(w => w.walletClientType) || 
+                            wallets[0];
+        const provider = await activeWallet.getEthereumProvider();
+        setWalletProvider(provider);
+      }
+
       // Call blockchain to withdraw revenue
       const { txHash, amount } = await withdrawRevenueOnChain(event.contractEventId);
       

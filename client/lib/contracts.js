@@ -5,6 +5,26 @@ export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 export const PYUSD_ADDRESS = process.env.NEXT_PUBLIC_PYUSD_ADDRESS;
 export const CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '11155111');
 
+// Store the current wallet provider (set by components using Privy)
+let currentWalletProvider = null;
+
+/**
+ * Set the wallet provider from Privy
+ * This should be called by components that use Privy wallets
+ * @param {object} provider - EIP-1193 provider from Privy wallet
+ */
+export const setWalletProvider = (provider) => {
+  currentWalletProvider = provider;
+};
+
+/**
+ * Get the current wallet provider
+ * @returns {object|null} - Current wallet provider or null
+ */
+export const getWalletProvider = () => {
+  return currentWalletProvider;
+};
+
 // Ticketify Contract ABI
 export const TICKETIFY_ABI = [
   // Events
@@ -48,6 +68,11 @@ export const PYUSD_ABI = [
 
 // Helper function to get provider
 export const getProvider = () => {
+  // Prioritize Privy wallet provider over window.ethereum
+  if (currentWalletProvider) {
+    return new ethers.BrowserProvider(currentWalletProvider);
+  }
+  // Fallback to window.ethereum if no Privy provider is set
   if (typeof window !== 'undefined' && window.ethereum) {
     return new ethers.BrowserProvider(window.ethereum);
   }

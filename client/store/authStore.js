@@ -7,7 +7,7 @@ const useAuthStore = create(
       // State
       user: null,
       isAuthenticated: false,
-      wallet: null,
+      wallet: null, // { address, chainId, walletClientType }
 
       // Actions
       setUser: (user) => set({ user }),

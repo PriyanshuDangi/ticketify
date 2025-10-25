@@ -9,7 +9,8 @@ import {
   checkPYUSDBalance,
   checkPYUSDAllowance,
   approvePYUSD,
-  purchaseTicketOnChain
+  purchaseTicketOnChain,
+  setWalletProvider
 } from '@/lib/contracts';
 import { apiClient } from '@/lib/api';
 import LoadingSpinner from './LoadingSpinner';
@@ -25,6 +26,24 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
   const [txHash, setTxHash] = useState('');
   const [ticketId, setTicketId] = useState('');
   const [loadingMessage, setLoadingMessage] = useState('');
+
+  // Set up the wallet provider when component mounts or wallets change
+  useEffect(() => {
+    const setupWalletProvider = async () => {
+      if (wallets.length > 0) {
+        // Get the active wallet (prefer external wallets like MetaMask)
+        const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
+                            wallets.find(w => w.walletClientType) || 
+                            wallets[0];
+        
+        // Get the EIP-1193 provider from the wallet
+        const provider = await activeWallet.getEthereumProvider();
+        setWalletProvider(provider);
+      }
+    };
+    
+    setupWalletProvider();
+  }, [wallets]);
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
@@ -45,12 +64,20 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
     setError('');
 
     try {
-      // Get wallet address
-      const wallet = wallets[0];
-      if (!wallet) {
+      // Get the active wallet (prefer external wallets like MetaMask)
+      const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
+                          wallets.find(w => w.walletClientType) || 
+                          wallets[0];
+      
+      if (!activeWallet) {
         throw new Error('No wallet connected');
       }
-      const walletAddress = wallet.address;
+      
+      // Ensure we're using the correct provider for this wallet
+      const provider = await activeWallet.getEthereumProvider();
+      setWalletProvider(provider);
+      
+      const walletAddress = activeWallet.address;
 
       // Step 1: Initiate purchase in backend
       setLoadingMessage('Creating ticket record...');

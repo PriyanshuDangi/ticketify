@@ -7,7 +7,7 @@ import moment from 'moment';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useAuthStore } from '@/store/authStore';
 import { apiClient } from '@/lib/api';
-import { createEventOnChain } from '@/lib/contracts';
+import { createEventOnChain, setWalletProvider } from '@/lib/contracts';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 
@@ -42,6 +42,24 @@ export default function CreateEventPage() {
       setTimeout(() => router.push('/'), 2000);
     }
   }, [ready, authenticated, router]);
+
+  // Set up the wallet provider when wallets are available
+  useEffect(() => {
+    const setupWalletProvider = async () => {
+      if (wallets.length > 0) {
+        // Get the active wallet (prefer external wallets like MetaMask)
+        const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
+                            wallets.find(w => w.walletClientType) || 
+                            wallets[0];
+        
+        // Get the EIP-1193 provider from the wallet
+        const provider = await activeWallet.getEthereumProvider();
+        setWalletProvider(provider);
+      }
+    };
+    
+    setupWalletProvider();
+  }, [wallets]);
 
   // Check Google Calendar connection
   useEffect(() => {
@@ -177,6 +195,15 @@ export default function CreateEventPage() {
     setError('');
 
     try {
+      // Ensure we're using the correct wallet provider
+      if (wallets.length > 0) {
+        const activeWallet = wallets.find(w => w.walletClientType === 'metamask') || 
+                            wallets.find(w => w.walletClientType) || 
+                            wallets[0];
+        const provider = await activeWallet.getEthereumProvider();
+        setWalletProvider(provider);
+      }
+
       // Step 1: Create event in backend (draft mode)
       setError('Creating event in backend...');
       const submitData = new FormData();
@@ -591,7 +618,11 @@ export default function CreateEventPage() {
         {wallets.length > 0 && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-blue-800 text-sm">
-              📝 <strong>Connected Wallet:</strong> {wallets[0].address}
+              📝 <strong>Connected Wallet:</strong> {
+                (wallets.find(w => w.walletClientType === 'metamask') || 
+                 wallets.find(w => w.walletClientType) || 
+                 wallets[0]).address
+              }
             </p>
           </div>
         )}
