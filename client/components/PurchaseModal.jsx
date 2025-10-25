@@ -189,7 +189,7 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
                   autoFocus
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  You'll receive Google Calendar invite and ticket confirmation at this email
+                  You&apos;ll receive Google Calendar invite and ticket confirmation at this email
                 </p>
               </div>
 
@@ -221,7 +221,7 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
             
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <p className="text-sm text-blue-800">
-                You'll need to approve PYUSD spending and sign the transaction in your wallet.
+                You&apos;ll need to approve PYUSD spending and sign the transaction in your wallet.
               </p>
             </div>
 
@@ -323,7 +323,7 @@ export default function PurchaseModal({ event, onClose, onSuccess }) {
 
             <h2 className="text-2xl font-bold mb-2">Ticket Purchased!</h2>
             <p className="text-gray-600 mb-6">
-              You've been successfully added to the event. Check your email for the Google Calendar invite with the Meet link.
+              You&apos;ve been successfully added to the event. Check your email for the Google Calendar invite with the Meet link.
             </p>
 
             <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
